@@ -13,10 +13,36 @@ import { SubjectModule } from './subject/subject.module';
 import { LessonsService } from './lessons/lessons.service';
 import { LessonsController } from './lessons/lessons.controller';
 import { LessonsModule } from './lessons/lessons.module';
+import { GradesModule } from './grades/grades.module';
+import { AttendanceModule } from './attendance/attendance.module';
+import { StudentsModule } from './students/students.module';
+import { StudentsService } from './students/students.service';
+import { StudentsController } from './students/students.controller';
 
 @Module({
-  imports: [UsersModule, AuthModule, ClassroomsModule, SubjectModule, LessonsModule],
-  controllers: [AppController, SchoolsController, LessonsController],
-  providers: [AppService, PrismaService, PrismaService, SchoolsService, LessonsService],
+  imports: [
+    UsersModule,
+    AuthModule,
+    ClassroomsModule,
+    SubjectModule,
+    LessonsModule,
+    GradesModule,
+    AttendanceModule,
+    StudentsModule,
+  ],
+  controllers: [
+    AppController,
+    SchoolsController,
+    LessonsController,
+    StudentsController,
+  ],
+  providers: [
+    AppService,
+    PrismaService,
+    PrismaService,
+    SchoolsService,
+    LessonsService,
+    StudentsService,
+  ],
 })
 export class AppModule {}

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -19,6 +20,8 @@ import { RegisterDirectorDto } from './dto/register-director.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Role } from '@prisma/client';
+import { CurrentUser } from './dto/current-user.decorator';
+import { User } from '@prisma/client';
 
 @Controller('users')
 export class UsersController {
@@ -33,9 +36,11 @@ export class UsersController {
     return req.user;
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
-  getAll(@Query('role') role?: string) {
-    return this.usersService.getAll(role);
+  getAll(@Query('role') role: string, @Req() req: any) {
+    const schoolId = req.user.schoolId;
+    return this.usersService.getAll(role, schoolId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -84,18 +89,30 @@ export class UsersController {
     return this.usersService.getById(id);
   }
 
-  @Put(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(id, dto);
-  }
-
-  @Delete(':id')
-  delete(@Param('id') id: string) {
-    return this.usersService.delete(id);
-  }
-
   @Post('register-director')
   registerDirector(@Body() dto: RegisterDirectorDto) {
     return this.usersService.registerDirector(dto);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  async updateUser(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @CurrentUser() user: User,
+  ) {
+    if (!user.schoolId) {
+      throw new Error('School ID is required');
+    }
+    return this.usersService.update(id, updateUserDto, user.schoolId);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  async deleteUser(@Param('id') id: string, @CurrentUser() user: User) {
+    if (!user.schoolId) {
+      throw new Error('School ID is required');
+    }
+    return this.usersService.remove(id, user.schoolId);
   }
 }

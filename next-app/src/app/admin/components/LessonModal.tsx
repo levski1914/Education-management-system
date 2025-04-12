@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/app/utils/api";
-
+type Student = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
 export default function LessonModal({
   classroomId,
   onClose,
@@ -10,10 +15,21 @@ export default function LessonModal({
   classroomId: string;
   onClose: () => void;
 }) {
-  const [lessons, setLessons] = useState([]);
+  const [lessons, setLessons] = useState<
+    {
+      id: string;
+      dayOfWeek: number;
+      startTime: string;
+      endTime: string;
+      subjectId: string;
+      subject?: { name: string };
+      teacher?: { firstName: string; lastName: string };
+    }[]
+  >([]);
   const [subjects, setSubjects] = useState([]);
   const [teachers, setTeachers] = useState([]);
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [gradeMap, setGradeMap] = useState<Record<string, number>>({});
 
   const [day, setDay] = useState(1);
   const [startTime, setStartTime] = useState("08:00");
@@ -22,22 +38,79 @@ export default function LessonModal({
   const [teacherId, setTeacherId] = useState("");
   const [newSubjectName, setNewSubjectName] = useState("");
 
+  const isCurrentLesson = (lesson: any) => {
+    const now = new Date();
+    const start = new Date();
+    const end = new Date();
+
+    const [startH, startM] = lesson.startTime.split(":");
+    const [endH, endM] = lesson.endTime.split(":");
+
+    start.setHours(+startH, +startM, 0);
+    end.setHours(+endH, +endM, 0);
+
+    const inTime = now >= start && now <= end;
+    // console.log("⏱️ isCurrentLesson", inTime, lesson.startTime, lesson.endTime);
+    return inTime;
+  };
+
+  const markAttendance = async (
+    studentId: string,
+    status: "PRESENT" | "ABSENT" | "LATE"
+  ) => {
+    const token = localStorage.getItem("token");
+    const currentLesson = lessons.find(
+      (l) => l.dayOfWeek === day && isCurrentLesson(l)
+    ) as (typeof lessons)[number] | undefined;
+    if (!currentLesson) return;
+
+    await api.post(
+      `/attendance/${studentId}`,
+      {
+        lessonId: currentLesson.id,
+        status,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+  };
+
+  const giveGrade = async (studentId: string, value: number) => {
+    const token = localStorage.getItem("token");
+    const currentLesson = lessons.find(
+      (l: any) => l.dayOfWeek === day && isCurrentLesson(l)
+    );
+    if (!currentLesson) return;
+
+    await api.post(
+      `/grades/${studentId}`,
+      {
+        subjectId: currentLesson.subjectId,
+        lessonId: currentLesson.id,
+        value,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+  };
+
   const fetchData = async () => {
     const token = localStorage.getItem("token");
     const headers = { Authorization: `Bearer ${token}` };
 
-    const [subs, teachs, less] = await Promise.all([
+    const [subs, teachs, less, classData] = await Promise.all([
       api.get("/subjects", { headers }),
       api.get("/users?role=TEACHER", { headers }),
       api.get(`/lessons/classroom/${classroomId}`, { headers }),
+      api.get(`/classrooms/${classroomId}`, { headers }),
     ]);
 
     setSubjects(subs.data);
     setTeachers(teachs.data);
     setLessons(less.data);
-    if (less.data[0]?.classroom?.students) {
-      setStudents(less.data[0].classroom.students);
-    }
+    setStudents(classData.data.students); // 💡 ето тук вече е точно
   };
 
   const createSubject = async () => {
@@ -69,10 +142,31 @@ export default function LessonModal({
     setSubjectId("");
     setTeacherId("");
   };
+  const fetchGrades = async () => {
+    const token = localStorage.getItem("token");
+    const lesson = lessons.find(
+      (l) => l.dayOfWeek === day && isCurrentLesson(l)
+    );
+    if (!lesson) return;
+
+    const res = await api.get(`/grades/lesson/${lesson.id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const map: Record<string, number> = {};
+    res.data.forEach((g: any) => {
+      map[g.studentId] = g.value;
+    });
+    setGradeMap(map);
+  };
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    fetchGrades();
+  }, [lessons, day]); // ❗ Сложи го така
 
   return (
     <div className="bg-white opacity-100 text-black  p-6 rounded w-full max-w-6xl h-[85vh] flex overflow-hidden">
@@ -101,13 +195,63 @@ export default function LessonModal({
           {students.length === 0 ? (
             <p className="text-sm text-zinc-500">Няма ученици</p>
           ) : (
-            <ul className="text-sm list-disc list-inside space-y-1">
-              {students.map((s: any) => (
-                <li key={s.id}>
-                  {s.firstName} {s.lastName}
-                </li>
+            <div className="space-y-2">
+              {students.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex justify-between items-center gap-2 border-b pb-1"
+                >
+                  <span>
+                    {s.firstName} {s.lastName}
+                  </span>
+
+                  {lessons.some(
+                    (l: any) => l.dayOfWeek === day && isCurrentLesson(l)
+                  ) && (
+                    <div className="flex gap-2 items-center">
+                      {/* Присъствие */}
+                      <button
+                        onClick={() => markAttendance(s.id, "PRESENT")}
+                        className="bg-green-600 px-2 py-1 rounded text-xs"
+                      >
+                        ✔️
+                      </button>
+                      <button
+                        onClick={() => markAttendance(s.id, "ABSENT")}
+                        className="bg-red-600 px-2 py-1 rounded text-xs"
+                      >
+                        ❌
+                      </button>
+                      <button
+                        onClick={() => markAttendance(s.id, "LATE")}
+                        className="bg-yellow-500 px-2 py-1 rounded text-xs"
+                      >
+                        ⏱️
+                      </button>
+
+                      {/* Оценка */}
+                      <select
+                        className="text-black text-xs rounded px-1"
+                        value={gradeMap[s.id] || ""}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value);
+                          if (!value) return;
+                          setGradeMap({ ...gradeMap, [s.id]: value }); // локално
+                          giveGrade(s.id, value);
+                        }}
+                      >
+                        <option value="">🎓</option>
+                        {[2, 3, 4, 5, 6].map((n) => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </div>

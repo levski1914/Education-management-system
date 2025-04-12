@@ -36,7 +36,9 @@ model User {
   class      Classroom? @relation("ClassroomStudents", fields: [classId], references: [id])
   leadsClass Classroom? @relation("ClassroomTeacher")
 
-  lessonsTaught Lesson[] @relation("TeacherLessons")
+  lessonsTaught Lesson[]     @relation("TeacherLessons")
+  Grade         Grade[]
+  Attendance    Attendance[]
 }
 
 model School {
@@ -72,6 +74,7 @@ model Subject {
   schoolId String
   school   School   @relation(fields: [schoolId], references: [id])
   lessons  Lesson[]
+  Grade    Grade[]
 }
 
 model Lesson {
@@ -89,7 +92,37 @@ model Lesson {
   startTime String? // 🟢 това трябва да съществува
   endTime   String? // 🟢 и това също
 
+  createdAt  DateTime     @default(now())
+  Grade      Grade[]
+  Attendance Attendance[]
+}
+
+model Grade {
+  id        String   @id @default(uuid())
+  value     Int
+  student   User     @relation(fields: [studentId], references: [id])
+  studentId String
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+  subjectId String
+  lesson    Lesson?  @relation(fields: [lessonId], references: [id])
+  lessonId  String?
   createdAt DateTime @default(now())
+}
+
+model Attendance {
+  id        String           @id @default(uuid())
+  status    AttendanceStatus
+  student   User             @relation(fields: [studentId], references: [id])
+  studentId String
+  lesson    Lesson           @relation(fields: [lessonId], references: [id])
+  lessonId  String
+  createdAt DateTime         @default(now())
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
 }
 
 enum Role {

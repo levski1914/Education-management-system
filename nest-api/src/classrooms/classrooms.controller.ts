@@ -51,4 +51,9 @@ export class ClassroomsController {
   ) {
     return this.service.assignClassTeacher(classId, teacherId);
   }
+
+  @Get(':id')
+  getOne(@Param('id') id: string) {
+    return this.service.getOneById(id);
+  }
 }

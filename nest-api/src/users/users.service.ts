@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -10,14 +10,18 @@ import { RegisterDirectorDto } from './dto/register-director.dto';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async getAll(role?: string) {
+  async getAll(role?: string, schoolId?: string) {
     return this.prisma.user.findMany({
-      where: role ? { role: { equals: role as Role } } : {},
+      where: {
+        ...(role ? { role: role as Role } : {}),
+        ...(schoolId ? { schoolId } : {}),
+      },
       include: {
-        class: true, // 🟢 добави това
+        class: true,
       },
     });
   }
+
   async getById(id: string) {
     return this.prisma.user.findUnique({ where: { id } });
   }
@@ -29,15 +33,31 @@ export class UsersService {
     });
   }
 
-  async update(id: string, dto: UpdateUserDto) {
+  async update(userId: string, dto: UpdateUserDto, schoolId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user || user.schoolId !== schoolId) {
+      throw new ForbiddenException('Нямате достъп до този потребител');
+    }
+
     return this.prisma.user.update({
-      where: { id },
+      where: { id: userId },
       data: dto,
     });
   }
+  async remove(userId: string, schoolId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
-  async delete(id: string) {
-    return this.prisma.user.delete({ where: { id } });
+    if (!user || user.schoolId !== schoolId) {
+      throw new ForbiddenException('Нямате достъп до този потребител');
+    }
+
+    // 🛑 Изтрий свързани уроци първо
+    await this.prisma.lesson.deleteMany({
+      where: { teacherId: userId },
+    });
+
+    return this.prisma.user.delete({ where: { id: userId } });
   }
 
   async registerDirector(dto: RegisterDirectorDto) {

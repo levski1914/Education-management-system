@@ -53,4 +53,11 @@ export class ClassroomsService {
       data: { classTeacherId: teacherId },
     });
   }
+
+  async getOneById(id: string) {
+    return this.prisma.classroom.findUnique({
+      where: { id },
+      include: { students: true, classTeacher: true },
+    });
+  }
 }

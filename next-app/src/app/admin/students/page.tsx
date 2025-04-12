@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/app/utils/api";
+
 type User = {
   id: string;
   email: string;
@@ -29,6 +30,8 @@ export default function StudentsPage() {
     const res = await api.get("/users?role=STUDENT", {
       headers: { Authorization: `Bearer ${token}` },
     });
+    console.log("📦 Ученици:", res.data);
+
     setStudents(res.data);
   };
 
@@ -77,7 +80,7 @@ export default function StudentsPage() {
                   <button
                     onClick={() => {
                       setSelectedStudent(s);
-                      setSelectedClassId(s.classroom?.id || ""); // текущо избран клас
+                      setSelectedClassId(s.classroom?.id || "");
                     }}
                     className="bg-yellow-600 px-3 py-1 rounded text-sm"
                   >
@@ -92,6 +95,41 @@ export default function StudentsPage() {
                   📌 Назначи в клас
                 </button>
               )}
+
+              <Link
+                href={`/admin/students/${s.id}/`}
+                className="bg-purple-600 px-3 py-1 rounded text-sm"
+              >
+                📄 Досие
+              </Link>
+
+              <Link
+                href={`/admin/students/${s.id}/edit`}
+                className="bg-blue-600 px-3 py-1 rounded text-sm"
+              >
+                ✏️
+              </Link>
+
+              <button
+                onClick={async () => {
+                  const token = localStorage.getItem("token");
+                  if (confirm("Сигурен ли си, че искаш да изтриеш ученика?")) {
+                    try {
+                      await api.delete(`/users/${s.id}`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      fetchStudents();
+                    } catch (err: any) {
+                      alert(
+                        err.response?.data?.message || "Грешка при изтриване"
+                      );
+                    }
+                  }
+                }}
+                className="bg-red-600 px-3 py-1 rounded text-sm"
+              >
+                🗑️
+              </button>
             </div>
           </div>
         ))}
