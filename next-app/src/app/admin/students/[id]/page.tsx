@@ -5,13 +5,14 @@ import { useParams } from "next/navigation";
 import { api } from "@/app/utils/api";
 import { StudentGrades } from "../../components/StudentGrades";
 import { StudentAttendance } from "../../components/StudentAttendance";
+import { StudentFiles } from "../../components/StudentFiles";
 
 export default function StudentProfilePage() {
   const { id } = useParams(); // взимаме studentId от URL
   const [student, setStudent] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"info" | "grades" | "attendance">(
-    "info"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "info" | "grades" | "attendance" | "documents"
+  >("info");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -50,6 +51,7 @@ export default function StudentProfilePage() {
           { key: "info", label: "👤 Профил" },
           { key: "grades", label: "🎓 Оценки" },
           { key: "attendance", label: "✅ Присъствия" },
+          { key: "documents", label: "📁 Документи" },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -57,7 +59,7 @@ export default function StudentProfilePage() {
             className={`px-4 py-1 cursor-pointer rounded-t font-semibold transition-all duration-200 ${
               activeTab === tab.key
                 ? "bg-blue-600 text-white shadow"
-                : "hover:bg-zinc-100"
+                : "hover:bg-zinc-600 hover:text-white"
             }`}
           >
             {tab.label}
@@ -86,6 +88,7 @@ export default function StudentProfilePage() {
         {activeTab === "attendance" && (
           <StudentAttendance studentId={id as string} />
         )}
+        {activeTab === "documents" && <StudentFiles studentId={id as string} />}
       </div>
     </div>
   );

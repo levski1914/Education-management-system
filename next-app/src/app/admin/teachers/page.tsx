@@ -36,6 +36,20 @@ export default function AdminTeachersPage() {
       }
     }
   };
+  if (!teachers) {
+    return (
+      <div className="flex h-full justify-center items-center">
+        <div className="loader">
+          <div className="loader__bar"></div>
+          <div className="loader__bar"></div>
+          <div className="loader__bar"></div>
+          <div className="loader__bar"></div>
+          <div className="loader__bar"></div>
+          <div className="loader__ball"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="text-white space-y-6">
@@ -43,7 +57,7 @@ export default function AdminTeachersPage() {
         <h1 className="text-2xl text-black font-bold">👨‍🏫 Учители</h1>
         <Link
           href="/admin/teachers/new"
-          className="bg-green-600 px-4 py-2 rounded"
+          className="bg-green-600 hover:bg-green-300 cursor-pointer px-4 py-2 rounded"
         >
           ➕ Добави учител
         </Link>
@@ -64,13 +78,13 @@ export default function AdminTeachersPage() {
             <div className="flex gap-2">
               <Link
                 href={`/admin/teachers/${t.id}/edit`}
-                className="bg-blue-600 px-2 py-1 rounded text-sm"
+                className="bg-blue-600 hover:bg-blue-300 cursor-pointer px-2 py-1 rounded text-sm"
               >
                 ✏️
               </Link>
               <button
                 onClick={() => handleDelete(t.id)}
-                className="bg-red-600 px-2 py-1 rounded text-sm"
+                className="bg-red-600 hover:bg-red-300 cursor-pointer px-2 py-1 rounded text-sm"
               >
                 🗑️
               </button>

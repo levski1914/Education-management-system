@@ -36,9 +36,10 @@ model User {
   class      Classroom? @relation("ClassroomStudents", fields: [classId], references: [id])
   leadsClass Classroom? @relation("ClassroomTeacher")
 
-  lessonsTaught Lesson[]     @relation("TeacherLessons")
+  lessonsTaught Lesson[]      @relation("TeacherLessons")
   Grade         Grade[]
   Attendance    Attendance[]
+  StudentFile   StudentFile[]
 }
 
 model School {
@@ -117,6 +118,15 @@ model Attendance {
   lesson    Lesson           @relation(fields: [lessonId], references: [id])
   lessonId  String
   createdAt DateTime         @default(now())
+}
+
+model StudentFile {
+  id        String   @id @default(uuid())
+  name      String
+  url       String
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 enum AttendanceStatus {

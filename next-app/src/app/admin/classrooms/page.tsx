@@ -91,7 +91,9 @@ export default function AdminClassRoomPage() {
           onClick={handleCreate}
           disabled={loading}
           className={`px-4 py-2 rounded ${
-            loading ? "bg-zinc-500" : "bg-green-600"
+            loading
+              ? "bg-zinc-500"
+              : "bg-green-600 hover:bg-green-300 cursor-pointer"
           }`}
         >
           {loading ? "Добавяне..." : "➕ Добави"}
@@ -121,7 +123,7 @@ export default function AdminClassRoomPage() {
                 setSelectedClassroom(cls);
                 setShowLessonModal(true);
               }}
-              className="bg-indigo-600 px-3 py-1 rounded text-sm"
+              className="bg-indigo-600 hover:bg-indigo-300 cursor-pointer px-3 py-1 rounded text-sm"
             >
               ⚙️ Управление
             </button>

@@ -18,6 +18,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { StudentsModule } from './students/students.module';
 import { StudentsService } from './students/students.service';
 import { StudentsController } from './students/students.controller';
+import { StudentFilesModule } from './student-files/student-files.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { StudentsController } from './students/students.controller';
     GradesModule,
     AttendanceModule,
     StudentsModule,
+    StudentFilesModule,
   ],
   controllers: [
     AppController,
