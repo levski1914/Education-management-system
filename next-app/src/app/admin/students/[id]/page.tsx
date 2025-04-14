@@ -110,16 +110,33 @@ export default function StudentProfilePage() {
             <p>
               <strong>Училище:</strong> {student.school?.name || "—"}
             </p>
-            {alerts.length > 0 && (
-              <div className="bg-red-900 p-4 rounded space-y-1 text-sm text-red-300">
-                <strong>📢 Внимание:</strong>
-                <ul className="list-disc ml-4">
-                  {alerts.map((a, i) => (
-                    <li key={i}>{a}</li>
-                  ))}
-                </ul>
+            {hasWarnings && !student.isWarningCleared && (
+              <div className="bg-red-800 text-white p-4 rounded shadow-md space-y-2">
+                <h2 className="font-bold text-lg">📢 Внимание:</h2>
+                <p>⚠️ Чести закъснения или отсъствия в последните 30 дни</p>
+                <button
+                  onClick={async () => {
+                    const token = localStorage.getItem("token");
+                    await api.put(
+                      `/students/${student.id}/clear-warning`,
+                      {},
+                      {
+                        headers: { Authorization: `Bearer ${token}` },
+                      }
+                    );
+                    const res = await api.get(`/students/${student.id}`, {
+                      headers: { Authorization: `Bearer ${token}` },
+                    });
+                    setStudent(res.data);
+                    setHasWarnings(false);
+                  }}
+                  className="bg-green-600 px-3 py-1 rounded text-white"
+                >
+                  ✅ Изчисти предупреждението
+                </button>
               </div>
             )}
+
             {hasWarnings && (
               <div className="bg-red-800 text-white p-4 rounded shadow-md">
                 <h2 className="font-bold text-lg">📢 Внимание:</h2>

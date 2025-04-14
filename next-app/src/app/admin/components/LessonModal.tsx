@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/app/utils/api";
-type Student = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-};
+
 export default function LessonModal({
   classroomId,
   onClose,
@@ -15,22 +10,17 @@ export default function LessonModal({
   classroomId: string;
   onClose: () => void;
 }) {
-  const [lessons, setLessons] = useState<
-    {
-      id: string;
-      dayOfWeek: number;
-      startTime: string;
-      endTime: string;
-      subjectId: string;
-      subject?: { name: string };
-      teacher?: { firstName: string; lastName: string };
-    }[]
-  >([]);
-  const [subjects, setSubjects] = useState([]);
-  const [teachers, setTeachers] = useState([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [gradeMap, setGradeMap] = useState<Record<string, number>>({});
-
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [attendanceStatus, setAttendanceStatus] = useState<
+    Record<string, string>
+  >({});
+  const [studentGrades, setStudentGrades] = useState<Record<string, number[]>>(
+    {}
+  );
+  const [showGradeInput, setShowGradeInput] = useState<string | null>(null);
   const [day, setDay] = useState(1);
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("08:45");
@@ -38,68 +28,21 @@ export default function LessonModal({
   const [teacherId, setTeacherId] = useState("");
   const [newSubjectName, setNewSubjectName] = useState("");
 
+  const token = localStorage.getItem("token");
+  const headers = { Authorization: `Bearer ${token}` };
+
   const isCurrentLesson = (lesson: any) => {
     const now = new Date();
     const start = new Date();
     const end = new Date();
-
     const [startH, startM] = lesson.startTime.split(":");
     const [endH, endM] = lesson.endTime.split(":");
-
     start.setHours(+startH, +startM, 0);
     end.setHours(+endH, +endM, 0);
-
-    const inTime = now >= start && now <= end;
-    // console.log("⏱️ isCurrentLesson", inTime, lesson.startTime, lesson.endTime);
-    return inTime;
-  };
-
-  const markAttendance = async (
-    studentId: string,
-    status: "PRESENT" | "ABSENT" | "LATE"
-  ) => {
-    const token = localStorage.getItem("token");
-    const currentLesson = lessons.find(
-      (l) => l.dayOfWeek === day && isCurrentLesson(l)
-    ) as (typeof lessons)[number] | undefined;
-    if (!currentLesson) return;
-
-    await api.post(
-      `/attendance/${studentId}`,
-      {
-        lessonId: currentLesson.id,
-        status,
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-  };
-
-  const giveGrade = async (studentId: string, value: number) => {
-    const token = localStorage.getItem("token");
-    const currentLesson = lessons.find(
-      (l: any) => l.dayOfWeek === day && isCurrentLesson(l)
-    );
-    if (!currentLesson) return;
-
-    await api.post(
-      `/grades/${studentId}`,
-      {
-        subjectId: currentLesson.subjectId,
-        lessonId: currentLesson.id,
-        value,
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    return now >= start && now <= end;
   };
 
   const fetchData = async () => {
-    const token = localStorage.getItem("token");
-    const headers = { Authorization: `Bearer ${token}` };
-
     const [subs, teachs, less, classData] = await Promise.all([
       api.get("/subjects", { headers }),
       api.get("/users?role=TEACHER", { headers }),
@@ -110,54 +53,94 @@ export default function LessonModal({
     setSubjects(subs.data);
     setTeachers(teachs.data);
     setLessons(less.data);
-    setStudents(classData.data.students); // 💡 ето тук вече е точно
+    setStudents(
+      classData.data.students.sort((a: any, b: any) =>
+        a.firstName.localeCompare(b.firstName)
+      )
+    );
   };
 
-  const createSubject = async () => {
-    const token = localStorage.getItem("token");
-    await api.post(
-      "/subjects",
-      { name: newSubjectName },
-      { headers: { Authorization: `Bearer ${token}` } }
+  const markAttendance = async (
+    studentId: string,
+    status: "PRESENT" | "ABSENT" | "LATE"
+  ) => {
+    const lesson = lessons.find(
+      (l) => l.dayOfWeek === day && isCurrentLesson(l)
     );
-    setNewSubjectName("");
-    await fetchData();
+    if (!lesson) return;
+    await api.post(
+      `/attendance/${studentId}`,
+      { lessonId: lesson.id, status },
+      { headers }
+    );
+    setAttendanceStatus({ ...attendanceStatus, [studentId]: status });
   };
 
-  const createLesson = async () => {
-    const token = localStorage.getItem("token");
-    await api.post(
-      "/lessons",
-      {
-        subjectId,
-        teacherId,
-        classroomId,
-        dayOfWeek: day,
-        startTime,
-        endTime,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    await fetchData();
-    setSubjectId("");
-    setTeacherId("");
-  };
-  const fetchGrades = async () => {
-    const token = localStorage.getItem("token");
+  const giveGrade = async (studentId: string, value: number) => {
     const lesson = lessons.find(
       (l) => l.dayOfWeek === day && isCurrentLesson(l)
     );
     if (!lesson) return;
 
-    const res = await api.get(`/grades/lesson/${lesson.id}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    try {
+      await api.post(
+        `/grades/${studentId}`,
+        {
+          subjectId: lesson.subjectId,
+          lessonId: lesson.id,
+          value,
+        },
+        { headers }
+      );
+
+      // 🔄 Добави веднага в UI
+      setStudentGrades((prev) => ({
+        ...prev,
+        [studentId]: [...(prev[studentId] || []), value],
+      }));
+
+      // 🧠 След малко вземи "истинските" от базата
+      setTimeout(() => {
+        fetchGrades();
+      }, 300);
+    } catch (err) {
+      console.error("Грешка при запис на оценка", err);
+    }
+  };
+
+  const fetchGrades = async () => {
+    const lesson = lessons.find(
+      (l) => l.dayOfWeek === day && isCurrentLesson(l)
+    );
+    if (!lesson) return;
+
+    const res = await api.get(`/grades/lesson/${lesson.id}`, { headers });
+
+    const map: Record<string, number[]> = {};
+    res.data.forEach((g: any) => {
+      if (!map[g.studentId]) map[g.studentId] = [];
+      map[g.studentId].push(g.value);
     });
 
-    const map: Record<string, number> = {};
-    res.data.forEach((g: any) => {
-      map[g.studentId] = g.value;
-    });
-    setGradeMap(map);
+    setStudentGrades(map);
+  };
+
+  const createLesson = async () => {
+    await api.post(
+      "/lessons",
+      { subjectId, teacherId, classroomId, dayOfWeek: day, startTime, endTime },
+      { headers }
+    );
+    fetchData();
+  };
+  const createSubject = async () => {
+    await api.post("/subjects", { name: newSubjectName }, { headers });
+    setNewSubjectName("");
+    fetchData();
+  };
+  const deleteLesson = async (id: string) => {
+    await api.delete(`/lessons/${id}`, { headers });
+    fetchData();
   };
 
   useEffect(() => {
@@ -166,15 +149,13 @@ export default function LessonModal({
 
   useEffect(() => {
     fetchGrades();
-  }, [lessons, day]); // ❗ Сложи го така
+  }, [lessons, day]);
 
   return (
-    <div className="bg-white opacity-100 text-black  p-6 rounded w-full max-w-6xl h-[85vh] flex overflow-hidden">
-      {/* Ляв панел - календар + ученици */}
+    <div className="bg-white text-black p-6 rounded w-full max-w-6xl h-[85vh] flex overflow-hidden">
       <div className="w-1/3 pr-6 border-r space-y-6 overflow-y-auto">
         <div>
           <h3 className="text-lg font-bold mb-2">📅 Календар</h3>
-
           <div className="flex gap-2">
             {["П", "В", "С", "Ч", "Пт"].map((d, i) => (
               <button
@@ -192,71 +173,99 @@ export default function LessonModal({
 
         <div>
           <h3 className="text-lg font-bold mb-2">👨‍🎓 Ученици</h3>
-          {students.length === 0 ? (
-            <p className="text-sm text-zinc-500">Няма ученици</p>
-          ) : (
-            <div className="space-y-2">
-              {students.map((s) => (
-                <div
-                  key={s.id}
-                  className="flex justify-between items-center gap-2 border-b pb-1"
-                >
+          {students.map((s) => {
+            const selectedStatus = attendanceStatus[s.id];
+            return (
+              <div key={s.id} className="border-b pb-2 mb-2 space-y-1">
+                <div className="flex justify-between items-start">
                   <span>
                     {s.firstName} {s.lastName}
-                  </span>
-
-                  {lessons.some(
-                    (l: any) => l.dayOfWeek === day && isCurrentLesson(l)
-                  ) && (
-                    <div className="flex gap-2 items-center">
-                      {/* Присъствие */}
-                      <button
-                        onClick={() => markAttendance(s.id, "PRESENT")}
-                        className="bg-green-600 px-2 py-1 rounded text-xs"
-                      >
-                        ✔️
-                      </button>
-                      <button
-                        onClick={() => markAttendance(s.id, "ABSENT")}
-                        className="bg-red-600 px-2 py-1 rounded text-xs"
-                      >
-                        ❌
-                      </button>
-                      <button
-                        onClick={() => markAttendance(s.id, "LATE")}
-                        className="bg-yellow-500 px-2 py-1 rounded text-xs"
-                      >
-                        ⏱️
-                      </button>
-
-                      {/* Оценка */}
-                      <select
-                        className="text-black text-xs rounded px-1"
-                        value={gradeMap[s.id] || ""}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
-                          if (!value) return;
-                          setGradeMap({ ...gradeMap, [s.id]: value }); // локално
-                          giveGrade(s.id, value);
-                        }}
-                      >
-                        <option value="">🎓</option>
-                        {[2, 3, 4, 5, 6].map((n) => (
-                          <option key={n} value={n}>
-                            {n}
-                          </option>
-                        ))}
-                      </select>
+                    <div className="text-md text-gray-700 mt-1">
+                      Оценки: {studentGrades[s.id]?.join(", ") || "—"}
                     </div>
-                  )}
+                  </span>
+                  <div className="flex gap-1 flex-wrap justify-end">
+                    {selectedStatus ? (
+                      <>
+                        <button
+                          className={`px-2 py-1 rounded text-xs ${
+                            selectedStatus === "PRESENT"
+                              ? "bg-green-500"
+                              : selectedStatus === "ABSENT"
+                              ? "bg-red-500"
+                              : "bg-yellow-400"
+                          }`}
+                          onClick={() =>
+                            setAttendanceStatus({
+                              ...attendanceStatus,
+                              [s.id]: undefined,
+                            })
+                          }
+                        >
+                          {selectedStatus === "PRESENT"
+                            ? "✔️ Присъствал"
+                            : selectedStatus === "ABSENT"
+                            ? "❌ Отсъствал"
+                            : "⏱️ Закъснял"}
+                        </button>
+                      </>
+                    ) : (
+                      ["PRESENT", "ABSENT", "LATE"].map((status) => (
+                        <button
+                          key={status}
+                          onClick={() => markAttendance(s.id, status as any)}
+                          className={`px-2 rounded text-xs ${
+                            status === "PRESENT"
+                              ? "bg-green-500"
+                              : status === "ABSENT"
+                              ? "bg-red-500"
+                              : "bg-yellow-400"
+                          }`}
+                        >
+                          {status === "PRESENT"
+                            ? "✔️"
+                            : status === "ABSENT"
+                            ? "❌"
+                            : "⏱️"}
+                        </button>
+                      ))
+                    )}
+
+                    <button
+                      onClick={() =>
+                        setShowGradeInput((prev) =>
+                          prev === s.id ? null : s.id
+                        )
+                      }
+                      className="bg-blue-500 text-white text-xs px-2 rounded"
+                    >
+                      ➕ Оценка
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
+
+                {showGradeInput === s.id && (
+                  <div className="flex gap-1 mt-1">
+                    {[2, 3, 4, 5, 6].map((grade) => (
+                      <button
+                        key={grade}
+                        onClick={() => {
+                          giveGrade(s.id, grade);
+                          setShowGradeInput(null);
+                        }}
+                        className="bg-zinc-300 px-2 rounded text-sm hover:bg-zinc-400"
+                      >
+                        {grade}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Дясна секция - форми + уроци */}
       <div className="flex-1 pl-6 space-y-6 overflow-y-auto">
         <div className="flex justify-between mt-4">
           <h2 className="text-xl font-bold">📚 Управление на уроци</h2>
@@ -267,24 +276,22 @@ export default function LessonModal({
             Затвори
           </button>
         </div>
-        <div>
-          <h4 className="font-semibold mb-2">➕ Добави предмет:</h4>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Име на предмет"
-              value={newSubjectName}
-              onChange={(e) => setNewSubjectName(e.target.value)}
-              className="p-2 border rounded flex-1"
-            />
-            <button
-              onClick={createSubject}
-              disabled={!newSubjectName.trim()}
-              className="bg-blue-600 text-white px-4 py-2 rounded"
-            >
-              Добави
-            </button>
-          </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <input
+            type="text"
+            placeholder="Име на предмет"
+            value={newSubjectName}
+            onChange={(e) => setNewSubjectName(e.target.value)}
+            className="p-2 border rounded"
+          />
+          <button
+            onClick={createSubject}
+            disabled={!newSubjectName.trim()}
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Добави
+          </button>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -294,7 +301,7 @@ export default function LessonModal({
             onChange={(e) => setSubjectId(e.target.value)}
           >
             <option value="">Предмет</option>
-            {subjects.map((s: any) => (
+            {subjects.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
@@ -307,7 +314,7 @@ export default function LessonModal({
             onChange={(e) => setTeacherId(e.target.value)}
           >
             <option value="">Учител</option>
-            {teachers.map((t: any) => (
+            {teachers.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.firstName} {t.lastName}
               </option>
@@ -331,25 +338,32 @@ export default function LessonModal({
         <button
           onClick={createLesson}
           disabled={!subjectId || !teacherId}
-          className="bg-green-600 text-white px-4 py-2 m-0 rounded"
+          className="bg-green-600 text-white px-4 py-2 rounded"
         >
           ➕ Добави урок
         </button>
 
         <div>
           <h3 className="font-semibold mb-2 mt-6">📅 Уроци за деня:</h3>
-          {lessons.filter((l: any) => l.dayOfWeek === day).length === 0 ? (
-            <p className="text-sm text-zinc-500">Няма добавени уроци</p>
-          ) : (
-            lessons
-              .filter((l: any) => l.dayOfWeek === day)
-              .map((l: any) => (
-                <div key={l.id} className="p-2 border-b">
-                  🕘 {l.startTime} - {l.endTime} | 📘 {l.subject?.name} ( 👨‍🏫{" "}
+          {lessons
+            .filter((l) => l.dayOfWeek === day)
+            .map((l) => (
+              <div
+                key={l.id}
+                className="p-2 border-b flex justify-between items-center"
+              >
+                <span>
+                  🕘 {l.startTime} - {l.endTime} | 📘 {l.subject?.name} (👨‍🏫{" "}
                   {l.teacher?.firstName} {l.teacher?.lastName})
-                </div>
-              ))
-          )}
+                </span>
+                <button
+                  onClick={() => deleteLesson(l.id)}
+                  className="text-red-600 hover:underline"
+                >
+                  🗑️
+                </button>
+              </div>
+            ))}
         </div>
       </div>
     </div>

@@ -22,6 +22,7 @@ type Classroom = {
 
 type EnhancedStudent = User & {
   hasWarnings?: boolean;
+  isWarningCleared?: boolean;
 };
 
 export default function StudentsPage() {
@@ -45,7 +46,11 @@ export default function StudentsPage() {
         const warningRes = await api.get(`/students/${s.id}/warnings`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        return { ...s, hasWarnings: warningRes.data.hasWarnings };
+        return {
+          ...s,
+          hasWarnings: warningRes.data.hasWarnings,
+          isWarningCleared: warningRes.data.isCleared, // или вземи от самия s ако се съдържа
+        };
       })
     );
 
@@ -125,14 +130,16 @@ export default function StudentsPage() {
           <div
             key={s.id}
             className={`bg-zinc-800 p-4 rounded shadow space-y-2 flex flex-col justify-between ${
-              s.hasWarnings ? "border-8 border-red-600 border-" : ""
+              s.hasWarnings && !s.isWarningCleared
+                ? "border-8 border-red-600"
+                : ""
             }`}
           >
             <div>
               <h3 className="font-semibold text-lg">
                 {s.firstName} {s.lastName}
               </h3>
-              {s.hasWarnings && (
+              {s.hasWarnings && !s.isWarningCleared && (
                 <p className="text-sm text-red-400 font-bold mt-1">
                   ⚠️ Внимание: Има чести отсъствия или закъснения
                 </p>

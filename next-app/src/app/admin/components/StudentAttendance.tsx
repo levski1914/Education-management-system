@@ -6,6 +6,7 @@ type AttendanceRecord = {
   id: string;
   status: "PRESENT" | "ABSENT" | "LATE";
   createdAt: string;
+  excused: boolean; // 🆕
   lesson: {
     subject: { name: string };
     teacher: { firstName: string; lastName: string };
@@ -53,8 +54,64 @@ export function StudentAttendance({ studentId }: { studentId: string }) {
                 </td>
                 <td className="border border-zinc-700 px-2 py-1 font-bold text-center">
                   {a.status === "PRESENT" && "✔️ Присъствал"}
-                  {a.status === "ABSENT" && "❌ Отсъствие"}
-                  {a.status === "LATE" && "⏱️ Закъснял"}
+                  {a.status === "ABSENT" && (
+                    <>
+                      ❌ Отсъствие{" "}
+                      {a.excused ? (
+                        <span className="text-green-400 ml-1">🟢 Извинен</span>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            const token = localStorage.getItem("token");
+                            await api.put(
+                              `/attendance/${a.id}/excuse`,
+                              {},
+                              {
+                                headers: { Authorization: `Bearer ${token}` },
+                              }
+                            );
+                            const refreshed = await api.get(
+                              `/students/${studentId}/attendance`,
+                              { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                            setAttendance(refreshed.data);
+                          }}
+                          className="text-blue-400 ml-2 underline hover:text-blue-300"
+                        >
+                          Извини
+                        </button>
+                      )}
+                    </>
+                  )}
+                  {a.status === "LATE" && (
+                    <>
+                      ⏱️ Закъснял{" "}
+                      {a.excused ? (
+                        <span className="text-green-400 ml-1">🟢 Извинен</span>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            const token = localStorage.getItem("token");
+                            await api.put(
+                              `/attendance/${a.id}/excuse`,
+                              {},
+                              {
+                                headers: { Authorization: `Bearer ${token}` },
+                              }
+                            );
+                            const refreshed = await api.get(
+                              `/students/${studentId}/attendance`,
+                              { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                            setAttendance(refreshed.data);
+                          }}
+                          className="text-blue-400 ml-2 underline hover:text-blue-300"
+                        >
+                          Извини
+                        </button>
+                      )}
+                    </>
+                  )}
                 </td>
               </tr>
             ))}

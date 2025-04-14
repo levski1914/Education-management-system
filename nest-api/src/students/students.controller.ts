@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Put,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StudentsService } from './students.service';
@@ -6,6 +14,17 @@ import { StudentsService } from './students.service';
 @Controller('students')
 export class StudentsController {
   constructor(private service: StudentsService) {}
+  @Put(':id/clear-warning')
+  @UseGuards(JwtAuthGuard)
+  clearStudentWarning(@Param('id') studentId: string) {
+    return this.service.clearStudentWarning(studentId);
+  }
+
+  @Put('excuse')
+  @UseGuards(JwtAuthGuard)
+  excuse(@Body() body: { ids: string[] }) {
+    return this.service.excuseAttendance(body.ids);
+  }
 
   @Get(':id/grades')
   @UseGuards(JwtAuthGuard)

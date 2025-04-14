@@ -32,14 +32,15 @@ model User {
   parent     User?   @relation("ParentChild", fields: [parentId], references: [id])
   children   User[]  @relation("ParentChild")
 
-  classId    String?
-  class      Classroom? @relation("ClassroomStudents", fields: [classId], references: [id])
-  leadsClass Classroom? @relation("ClassroomTeacher")
+  classId          String?
+  class            Classroom?    @relation("ClassroomStudents", fields: [classId], references: [id])
+  leadsClass       Classroom?    @relation("ClassroomTeacher")
+  isWarningCleared Boolean @default(false)
 
-  lessonsTaught Lesson[]      @relation("TeacherLessons")
-  Grade         Grade[]
-  Attendance    Attendance[]
-  StudentFile   StudentFile[]
+  lessonsTaught    Lesson[]      @relation("TeacherLessons")
+  Grade            Grade[]
+  Attendance       Attendance[]
+  StudentFile      StudentFile[]
 }
 
 model School {
@@ -118,7 +119,9 @@ model Attendance {
   lesson    Lesson           @relation(fields: [lessonId], references: [id])
   lessonId  String
   createdAt DateTime         @default(now())
+  excused   Boolean          @default(false) // 🆕 новото поле
 }
+
 
 model StudentFile {
   id        String   @id @default(uuid())

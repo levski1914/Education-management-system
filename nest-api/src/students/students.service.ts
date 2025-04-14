@@ -133,22 +133,30 @@ export class StudentsService {
   }
 
   async getBehaviorStatus(studentId: string) {
+    const threshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 дни
+
     const attendance = await this.prisma.attendance.findMany({
       where: {
         studentId,
-        createdAt: {
-          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        },
+        createdAt: { gte: threshold },
+        excused: false, // ❗️ само неизвинени
       },
     });
 
     const late = attendance.filter((a) => a.status === 'LATE').length;
     const absent = attendance.filter((a) => a.status === 'ABSENT').length;
 
+    const user = await this.prisma.user.findUnique({
+      where: { id: studentId },
+    });
+
     return {
       late,
       absent,
-      hasWarnings: late >= 3 || absent >= 3,
+      hasWarnings: user
+        ? !user.isWarningCleared && (late >= 3 || absent >= 3)
+        : false,
+      isCleared: user ? user.isWarningCleared : false,
     };
   }
 
@@ -167,9 +175,12 @@ export class StudentsService {
     thresholdDate.setDate(thresholdDate.getDate() - 30);
 
     const flagged = students.filter((s) => {
+      if (s.isWarningCleared) return false; // ⛔️ игнорирай изчистени
+
       const recent = s.Attendance.filter(
-        (a) => new Date(a.createdAt) > thresholdDate,
+        (a) => new Date(a.createdAt) > thresholdDate && !a.excused, // ❗️
       );
+
       const latenessCount = recent.filter((a) => a.status === 'LATE').length;
       const absentCount = recent.filter((a) => a.status === 'ABSENT').length;
       return latenessCount >= 3 || absentCount >= 3;
@@ -178,5 +189,22 @@ export class StudentsService {
     return {
       students: flagged.length,
     };
+  }
+
+  async clearStudentWarning(studentId: string) {
+    return this.prisma.user.update({
+      where: { id: studentId },
+      data: { isWarningCleared: true },
+    });
+  }
+  async excuseAttendance(ids: string[]) {
+    return this.prisma.attendance.updateMany({
+      where: {
+        id: { in: ids },
+      },
+      data: {
+        excused: true,
+      },
+    });
   }
 }
