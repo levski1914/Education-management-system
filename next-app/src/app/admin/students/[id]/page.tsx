@@ -13,6 +13,36 @@ export default function StudentProfilePage() {
   const [activeTab, setActiveTab] = useState<
     "info" | "grades" | "attendance" | "documents"
   >("info");
+  const [alerts, setAlerts] = useState<string[]>([]);
+  const [hasWarnings, setHasWarnings] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!id) return;
+
+    // Вземаме основна информация за ученика
+    api
+      .get(`/students/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setStudent(res.data));
+
+    // Вземаме warnings
+    api
+      .get(`/students/${id}/warnings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setHasWarnings(res.data.hasWarnings));
+  }, [id]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    api
+      .get(`/students/${id}/alerts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setAlerts(res.data));
+  }, [id]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -80,6 +110,24 @@ export default function StudentProfilePage() {
             <p>
               <strong>Училище:</strong> {student.school?.name || "—"}
             </p>
+            {alerts.length > 0 && (
+              <div className="bg-red-900 p-4 rounded space-y-1 text-sm text-red-300">
+                <strong>📢 Внимание:</strong>
+                <ul className="list-disc ml-4">
+                  {alerts.map((a, i) => (
+                    <li key={i}>{a}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {hasWarnings && (
+              <div className="bg-red-800 text-white p-4 rounded shadow-md">
+                <h2 className="font-bold text-lg">📢 Внимание:</h2>
+                <p className="mt-1">
+                  ⚠️ Чести закъснения или отсъствия в последните 30 дни
+                </p>
+              </div>
+            )}
           </div>
         )}
 

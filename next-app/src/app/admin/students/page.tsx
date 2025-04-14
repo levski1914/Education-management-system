@@ -9,7 +9,7 @@ type User = {
   email: string;
   firstName?: string;
   lastName?: string;
-  classroom?: {
+  class?: {
     id: string;
     name: string;
   };
@@ -20,8 +20,12 @@ type Classroom = {
   name: string;
 };
 
+type EnhancedStudent = User & {
+  hasWarnings?: boolean;
+};
+
 export default function StudentsPage() {
-  const [students, setStudents] = useState<User[]>([]);
+  const [students, setStudents] = useState<EnhancedStudent[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [selectedClassId, setSelectedClassId] = useState("");
@@ -32,8 +36,22 @@ export default function StudentsPage() {
     const res = await api.get("/users?role=STUDENT", {
       headers: { Authorization: `Bearer ${token}` },
     });
-    setStudents(res.data);
+
+    const baseStudents: EnhancedStudent[] = res.data;
+
+    // Добавяме warning status асинхронно
+    const studentsWithWarnings = await Promise.all(
+      baseStudents.map(async (s) => {
+        const warningRes = await api.get(`/students/${s.id}/warnings`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        return { ...s, hasWarnings: warningRes.data.hasWarnings };
+      })
+    );
+
+    setStudents(studentsWithWarnings);
   };
+
   const fetchClassrooms = async () => {
     const token = localStorage.getItem("token");
     const res = await api.get("/classrooms", {
@@ -53,7 +71,7 @@ export default function StudentsPage() {
   }, []);
   const filteredStudents = students.filter((s) => {
     const matchesClass =
-      selectedClassroom === "ALL" || s.classroom?.id === selectedClassroom;
+      selectedClassroom === "ALL" || s.class?.id === selectedClassroom;
     const matchesSearch =
       s.firstName?.toLowerCase().includes(search.toLowerCase()) ||
       s.lastName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -106,17 +124,26 @@ export default function StudentsPage() {
         {filteredStudents.map((s) => (
           <div
             key={s.id}
-            className="bg-zinc-800 p-4 rounded shadow space-y-2 flex flex-col justify-between"
+            className={`bg-zinc-800 p-4 rounded shadow space-y-2 flex flex-col justify-between ${
+              s.hasWarnings ? "border-8 border-red-600 border-" : ""
+            }`}
           >
             <div>
               <h3 className="font-semibold text-lg">
                 {s.firstName} {s.lastName}
               </h3>
+              {s.hasWarnings && (
+                <p className="text-sm text-red-400 font-bold mt-1">
+                  ⚠️ Внимание: Има чести отсъствия или закъснения
+                </p>
+              )}
               <p className="text-sm text-zinc-400">{s.email}</p>
-              {s.classroom ? (
+              {s.class ? (
                 <p className="text-sm mt-2">
                   📘 Назначен в клас:{" "}
-                  <span className="text-green-400">{s.classroom.name}</span>
+                  <span className="text-green-400 font-bold text-base">
+                    {s.class?.name}
+                  </span>
                 </p>
               ) : (
                 <p className="text-sm mt-2 text-yellow-400">
@@ -129,7 +156,7 @@ export default function StudentsPage() {
               <button
                 onClick={() => {
                   setSelectedStudent(s);
-                  setSelectedClassId(s.classroom?.id || "");
+                  setSelectedClassId(s.class?.id || "");
                 }}
                 className="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-sm"
               >

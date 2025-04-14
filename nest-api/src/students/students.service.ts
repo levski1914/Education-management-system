@@ -95,4 +95,88 @@ export class StudentsService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async getStudentAlerts(studentId: string) {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const [absences, lateness, badGrades] = await Promise.all([
+      this.prisma.attendance.count({
+        where: {
+          studentId,
+          status: 'ABSENT',
+          createdAt: { gte: oneWeekAgo },
+        },
+      }),
+      this.prisma.attendance.count({
+        where: {
+          studentId,
+          status: 'LATE',
+          createdAt: { gte: oneWeekAgo },
+        },
+      }),
+      this.prisma.grade.count({
+        where: {
+          studentId,
+          value: { lt: 3 },
+        },
+      }),
+    ]);
+
+    const alerts: string[] = [];
+
+    if (absences >= 3) alerts.push('⚠️ Чести отсъствия');
+    if (lateness >= 2) alerts.push('🔔 Чести закъснения');
+    if (badGrades > 0) alerts.push('❗ Има слаби оценки');
+
+    return alerts;
+  }
+
+  async getBehaviorStatus(studentId: string) {
+    const attendance = await this.prisma.attendance.findMany({
+      where: {
+        studentId,
+        createdAt: {
+          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        },
+      },
+    });
+
+    const late = attendance.filter((a) => a.status === 'LATE').length;
+    const absent = attendance.filter((a) => a.status === 'ABSENT').length;
+
+    return {
+      late,
+      absent,
+      hasWarnings: late >= 3 || absent >= 3,
+    };
+  }
+
+  async countStudentsWithWarnings(schoolId: string) {
+    const students = await this.prisma.user.findMany({
+      where: {
+        role: 'STUDENT',
+        schoolId,
+      },
+      include: {
+        Attendance: true,
+      },
+    });
+
+    const thresholdDate = new Date();
+    thresholdDate.setDate(thresholdDate.getDate() - 30);
+
+    const flagged = students.filter((s) => {
+      const recent = s.Attendance.filter(
+        (a) => new Date(a.createdAt) > thresholdDate,
+      );
+      const latenessCount = recent.filter((a) => a.status === 'LATE').length;
+      const absentCount = recent.filter((a) => a.status === 'ABSENT').length;
+      return latenessCount >= 3 || absentCount >= 3;
+    });
+
+    return {
+      students: flagged.length,
+    };
+  }
 }

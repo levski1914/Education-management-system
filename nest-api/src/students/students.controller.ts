@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StudentsService } from './students.service';
@@ -21,6 +21,21 @@ export class StudentsController {
   @Get(':id/grade-summary')
   getGradeSummary(@Param('id') studentId: string) {
     return this.service.getGradeSummary(studentId);
+  }
+  @Get(':id/alerts')
+  @UseGuards(JwtAuthGuard)
+  getAlerts(@Param('id') id: string) {
+    return this.service.getStudentAlerts(id);
+  }
+  @Get(':id/warnings')
+  getWarnings(@Param('id') id: string) {
+    return this.service.getBehaviorStatus(id);
+  }
+  @Get('warning-count')
+  @UseGuards(JwtAuthGuard)
+  async getWarningCount(@Req() req) {
+    const schoolId = req.user.schoolId;
+    return this.service.countStudentsWithWarnings(schoolId);
   }
 
   @Get(':id')
