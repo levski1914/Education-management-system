@@ -33,12 +33,20 @@ export default function LessonModal({
 
   const isCurrentLesson = (lesson: any) => {
     const now = new Date();
+
+    // Сравни дали е същия ден от седмицата (1-Понеделник до 5-Петък)
+    const today = now.getDay(); // неделя=0, понеделник=1...
+    const isSameDay = today === lesson.dayOfWeek;
+
+    if (!isSameDay) return false;
+
     const start = new Date();
     const end = new Date();
     const [startH, startM] = lesson.startTime.split(":");
     const [endH, endM] = lesson.endTime.split(":");
     start.setHours(+startH, +startM, 0);
     end.setHours(+endH, +endM, 0);
+
     return now >= start && now <= end;
   };
 
@@ -114,15 +122,26 @@ export default function LessonModal({
     );
     if (!lesson) return;
 
-    const res = await api.get(`/grades/lesson/${lesson.id}`, { headers });
+    const subjectId = lesson.subjectId;
+    const gradeMap: Record<string, number[]> = {};
 
-    const map: Record<string, number[]> = {};
-    res.data.forEach((g: any) => {
-      if (!map[g.studentId]) map[g.studentId] = [];
-      map[g.studentId].push(g.value);
-    });
+    await Promise.all(
+      students.map(async (s) => {
+        try {
+          const res = await api.get(
+            `/students/student/${s.id}?subjectId=${subjectId}`,
+            { headers }
+          );
 
-    setStudentGrades(map);
+          gradeMap[s.id] = res.data.map((g: any) => g.value); // 🔁 all grades
+        } catch (err) {
+          console.error("❌ Fetching grades failed", err);
+          gradeMap[s.id] = [];
+        }
+      })
+    );
+
+    setStudentGrades(gradeMap);
   };
 
   const createLesson = async () => {
@@ -175,6 +194,10 @@ export default function LessonModal({
           <h3 className="text-lg font-bold mb-2">👨‍🎓 Ученици</h3>
           {students.map((s) => {
             const selectedStatus = attendanceStatus[s.id];
+            const currentLesson = lessons.find(
+              (l) => l.dayOfWeek === day && isCurrentLesson(l)
+            );
+
             return (
               <div key={s.id} className="border-b pb-2 mb-2 space-y-1">
                 <div className="flex justify-between items-start">
@@ -184,9 +207,11 @@ export default function LessonModal({
                       Оценки: {studentGrades[s.id]?.join(", ") || "—"}
                     </div>
                   </span>
-                  <div className="flex gap-1 flex-wrap justify-end">
-                    {selectedStatus ? (
-                      <>
+
+                  {currentLesson ? (
+                    <div className="flex gap-1 flex-wrap justify-end">
+                      {/* присъствие */}
+                      {selectedStatus ? (
                         <button
                           className={`px-2 py-1 rounded text-xs ${
                             selectedStatus === "PRESENT"
@@ -208,43 +233,45 @@ export default function LessonModal({
                             ? "❌ Отсъствал"
                             : "⏱️ Закъснял"}
                         </button>
-                      </>
-                    ) : (
-                      ["PRESENT", "ABSENT", "LATE"].map((status) => (
-                        <button
-                          key={status}
-                          onClick={() => markAttendance(s.id, status as any)}
-                          className={`px-2 rounded text-xs ${
-                            status === "PRESENT"
-                              ? "bg-green-500"
+                      ) : (
+                        ["PRESENT", "ABSENT", "LATE"].map((status) => (
+                          <button
+                            key={status}
+                            onClick={() => markAttendance(s.id, status as any)}
+                            className={`p-2 rounded text-xs ${
+                              status === "PRESENT"
+                                ? "bg-green-500"
+                                : status === "ABSENT"
+                                ? "bg-red-500"
+                                : "bg-yellow-400"
+                            }`}
+                          >
+                            {status === "PRESENT"
+                              ? "✔️"
                               : status === "ABSENT"
-                              ? "bg-red-500"
-                              : "bg-yellow-400"
-                          }`}
-                        >
-                          {status === "PRESENT"
-                            ? "✔️"
-                            : status === "ABSENT"
-                            ? "❌"
-                            : "⏱️"}
-                        </button>
-                      ))
-                    )}
+                              ? "❌"
+                              : "⏱️"}
+                          </button>
+                        ))
+                      )}
 
-                    <button
-                      onClick={() =>
-                        setShowGradeInput((prev) =>
-                          prev === s.id ? null : s.id
-                        )
-                      }
-                      className="bg-blue-500 text-white text-xs px-2 rounded"
-                    >
-                      ➕ Оценка
-                    </button>
-                  </div>
+                      {/* оценка */}
+                      <button
+                        onClick={() =>
+                          setShowGradeInput((prev) =>
+                            prev === s.id ? null : s.id
+                          )
+                        }
+                        className="bg-blue-500 text-white text-xs px-2 rounded"
+                      >
+                        ➕ Оценка
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
 
-                {showGradeInput === s.id && (
+                {/* Въвеждане на оценка */}
+                {showGradeInput === s.id && currentLesson && (
                   <div className="flex gap-1 mt-1">
                     {[2, 3, 4, 5, 6].map((grade) => (
                       <button

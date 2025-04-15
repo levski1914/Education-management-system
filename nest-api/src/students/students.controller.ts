@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -13,7 +14,27 @@ import { StudentsService } from './students.service';
 
 @Controller('students')
 export class StudentsController {
-  constructor(private service: StudentsService) {}
+  constructor(
+    private service: StudentsService,
+    private prisma: PrismaService,
+  ) {}
+
+  @Get('student/:id') // вече го имаш
+  async getGradesForStudent(
+    @Param('id') studentId: string,
+    @Query('subjectId') subjectId?: string,
+  ) {
+    return this.prisma.grade.findMany({
+      where: {
+        studentId,
+        ...(subjectId ? { subjectId } : {}),
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+  }
+
   @Put(':id/clear-warning')
   @UseGuards(JwtAuthGuard)
   clearStudentWarning(@Param('id') studentId: string) {
@@ -50,6 +71,8 @@ export class StudentsController {
   getWarnings(@Param('id') id: string) {
     return this.service.getBehaviorStatus(id);
   }
+  // StudentsController.ts
+
   @Get('warning-count')
   @UseGuards(JwtAuthGuard)
   async getWarningCount(@Req() req) {

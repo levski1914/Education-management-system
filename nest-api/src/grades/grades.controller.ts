@@ -8,11 +8,11 @@ export class GradesController {
   constructor(private readonly service: GradesService) {}
 
   @Post(':studentId')
-  createOrUpdate(
+  create(
     @Param('studentId') studentId: string,
     @Body() dto: { subjectId: string; lessonId?: string; value: number },
   ) {
-    return this.service.createOrUpdate(studentId, dto);
+    return this.service.create(studentId, dto);
   }
 
   @Get(':studentId')

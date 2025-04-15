@@ -40,8 +40,15 @@ export class LessonsService {
   }
 
   async delete(id: string) {
+    // 1. Изтриваме всички attendance записи за този урок
+    await this.prisma.attendance.deleteMany({
+      where: { lessonId: id },
+    });
+
+    // 2. След това изтриваме урока
     return this.prisma.lesson.delete({ where: { id } });
   }
+
   async getForClassroom(classroomId: string) {
     return this.prisma.lesson.findMany({
       where: { classroomId },
