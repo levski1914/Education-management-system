@@ -29,11 +29,30 @@ export class UsersController {
     private readonly usersService: UsersService,
     private prisma: PrismaService,
   ) {}
+  @Put(':parentId/assign-child/:studentId')
+  @UseGuards(JwtAuthGuard)
+  assignChildToParent(
+    @Param('parentId') parentId: string,
+    @Param('studentId') studentId: string,
+  ) {
+    return this.usersService.assignParent(studentId, parentId);
+  }
+
+  @Put(':studentId/unassign-parent')
+  @UseGuards(JwtAuthGuard)
+  unassignParent(@Param('studentId') studentId: string) {
+    return this.usersService.unassignParent(studentId);
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
   getMe(@Request() req) {
     return req.user;
+  }
+  @UseGuards(JwtAuthGuard)
+  @Get(':studentId/parent-log')
+  getParentLog(@Param('studentId') studentId: string) {
+    return this.usersService.getParentLog(studentId);
   }
 
   @UseGuards(JwtAuthGuard)

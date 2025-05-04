@@ -18,6 +18,18 @@ export class UsersService {
       },
       include: {
         class: true,
+        children: true,
+      },
+    });
+  }
+  async getParentLog(studentId: string) {
+    return this.prisma.parentLog.findMany({
+      where: { studentId },
+      include: {
+        parent: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }
@@ -31,6 +43,46 @@ export class UsersService {
     return this.prisma.user.create({
       data: { ...dto, password: hashed, schoolId },
     });
+  }
+  async assignParent(studentId: string, parentId: string) {
+    await this.prisma.user.update({
+      where: { id: studentId },
+      data: { parentId },
+    });
+
+    await this.prisma.parentLog.create({
+      data: {
+        studentId,
+        parentId,
+        action: 'ASSIGN',
+      },
+    });
+
+    return { message: 'Родителят е свързан с ученика.' };
+  }
+
+  async unassignParent(studentId: string) {
+    const student = await this.prisma.user.findUnique({
+      where: { id: studentId },
+      select: { parentId: true },
+    });
+
+    if (!student?.parentId) return { message: 'Няма родител за премахване.' };
+
+    await this.prisma.user.update({
+      where: { id: studentId },
+      data: { parentId: null },
+    });
+
+    await this.prisma.parentLog.create({
+      data: {
+        studentId,
+        parentId: student.parentId,
+        action: 'UNASSIGN',
+      },
+    });
+
+    return { message: 'Родителят е премахнат от ученика.' };
   }
 
   async update(userId: string, dto: UpdateUserDto, schoolId: string) {

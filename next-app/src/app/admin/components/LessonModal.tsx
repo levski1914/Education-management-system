@@ -180,8 +180,10 @@ export default function LessonModal({
               <button
                 key={i}
                 onClick={() => setDay(i + 1)}
-                className={`w-10 h-10 rounded font-bold ${
-                  day === i + 1 ? "bg-blue-600 text-white" : "bg-zinc-200"
+                className={`w-10 h-10 rounded font-bold hover:bg-zinc-400 cursor-pointer ${
+                  day === i + 1
+                    ? "bg-blue-600 hover:bg-blue-600 cursor-pointer text-white"
+                    : "bg-zinc-200 "
                 }`}
               >
                 {d}
@@ -298,7 +300,7 @@ export default function LessonModal({
           <h2 className="text-xl font-bold">📚 Управление на уроци</h2>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-red-600 text-white rounded"
+            className="px-4 py-2 bg-red-600 hover:bg-red-300 cursor-pointer text-white rounded"
           >
             Затвори
           </button>
@@ -315,7 +317,7 @@ export default function LessonModal({
           <button
             onClick={createSubject}
             disabled={!newSubjectName.trim()}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            className="bg-blue-600 hover:bg-blue-300 cursor-pointer text-white px-4 py-2 rounded"
           >
             Добави
           </button>
@@ -323,7 +325,7 @@ export default function LessonModal({
 
         <div className="grid grid-cols-2 gap-4">
           <select
-            className="p-2 border rounded"
+            className="p-2 border hover:bg-gray-300 cursor-pointer rounded"
             value={subjectId}
             onChange={(e) => setSubjectId(e.target.value)}
           >
@@ -336,7 +338,7 @@ export default function LessonModal({
           </select>
 
           <select
-            className="p-2 border rounded"
+            className="p-2 border hover:bg-indigo-300 cursor-pointer rounded"
             value={teacherId}
             onChange={(e) => setTeacherId(e.target.value)}
           >
@@ -365,7 +367,7 @@ export default function LessonModal({
         <button
           onClick={createLesson}
           disabled={!subjectId || !teacherId}
-          className="bg-green-600 text-white px-4 py-2 rounded"
+          className="bg-green-600 hover:bg-green-300 cursor-pointer text-white px-4 py-2 rounded"
         >
           ➕ Добави урок
         </button>

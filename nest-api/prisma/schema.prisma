@@ -41,7 +41,23 @@ model User {
   Grade            Grade[]
   Attendance       Attendance[]
   StudentFile      StudentFile[]
+
+    parentLogsAsStudent ParentLog[] @relation("LogStudent")
+  parentLogsAsParent  ParentLog[] @relation("LogParent")
+
 }
+model ParentLog {
+  id        String   @id @default(uuid())
+  action    String   // "ASSIGN" | "UNASSIGN"     
+  createdAt DateTime @default(now())
+
+  studentId String
+  parentId  String
+
+  student User @relation("LogStudent", fields: [studentId], references: [id])
+  parent  User @relation("LogParent",  fields: [parentId],  references: [id])
+}
+
 
 model School {
   id        String      @id @default(uuid())
