@@ -20,6 +20,7 @@ import { StudentsService } from './students/students.service';
 import { StudentsController } from './students/students.controller';
 import { StudentFilesModule } from './student-files/student-files.module';
 import { ParentsModule } from './parents/parents.module';
+import { TeacherModule } from './teacher/teacher.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ParentsModule } from './parents/parents.module';
     StudentsModule,
     StudentFilesModule,
     ParentsModule,
+    TeacherModule,
   ],
   controllers: [
     AppController,
