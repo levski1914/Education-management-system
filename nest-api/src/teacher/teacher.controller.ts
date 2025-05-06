@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { TeacherService } from './teacher.service';
@@ -8,6 +8,11 @@ import { User } from '@prisma/client';
 @Controller('teacher')
 export class TeacherController {
   constructor(private readonly service: TeacherService) {}
+  @Get('class/:id/students')
+  @UseGuards(JwtAuthGuard)
+  getStudentsInClass(@Param('id') classId: string) {
+    return this.service.getStudentsInClass(classId);
+  }
 
   @Get('my-lessons')
   @UseGuards(JwtAuthGuard)

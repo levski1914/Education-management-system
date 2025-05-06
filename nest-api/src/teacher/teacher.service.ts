@@ -72,4 +72,27 @@ export class TeacherService {
       orderBy: { dayOfWeek: 'asc' },
     });
   }
+
+  // TeacherService.ts
+  async getStudentsInClass(classId: string) {
+    return this.prismaService.user.findMany({
+      where: { classId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        profilePic: true,
+        egn: true,
+        parent: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        Grade: true,
+        Attendance: true,
+      },
+    });
+  }
 }
