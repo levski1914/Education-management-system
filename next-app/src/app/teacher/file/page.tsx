@@ -71,7 +71,7 @@ export default function StudentProfileModal({
           </h1>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-red-600"
+            className="text-blue-500 hover:bg-red cursor-pointer hover:bg-red-600 hover:text-white p-3"
           >
             ✖
           </button>

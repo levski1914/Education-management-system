@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/app/utils/api";
 
 export default function AddGradeModal({ studentId, onClose }: any) {
@@ -6,6 +6,25 @@ export default function AddGradeModal({ studentId, onClose }: any) {
   const [subjectId, setSubjectId] = useState("");
   const [subjects, setSubjects] = useState([]);
   const [type, setType] = useState("контролно");
+
+
+ const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        modalRef.current &&
+        !modalRef.current.contains(event.target as Node)
+      ) {
+        onClose(); // затваря модала
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -34,7 +53,7 @@ export default function AddGradeModal({ studentId, onClose }: any) {
 
   return (
     <div className="fixed inset-0 bg-black/50 bg-opacity-30 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96 space-y-4">
+      <div ref={modalRef} className="bg-white p-6 rounded-lg shadow-lg w-96 space-y-4">
         <h2 className="text-lg font-bold">📝 Добави оценка</h2>
 
         <div>
@@ -78,12 +97,12 @@ export default function AddGradeModal({ studentId, onClose }: any) {
         </div>
 
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="text-gray-600">
+          <button onClick={onClose} className="text-gray-600 cursor-pointer hover:bg-red-600 hover:text-white">
             Затвори
           </button>
           <button
             onClick={handleSubmit}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            className="bg-blue-600 cursor-pointer hover:bg-blue-300 text-white px-4 py-2 rounded"
           >
             Запиши
           </button>

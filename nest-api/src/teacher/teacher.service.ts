@@ -42,17 +42,32 @@ export class TeacherService {
     });
   }
   async addAttendance(teacherId: string, dto: any) {
-    // Може да добавиш проверка дали teacher има право да отбелязва за този клас
+    const lesson = await this.prismaService.lesson.findFirst({
+      where: {
+        teacherId,
+        classroom: {
+          students: {
+            some: { id: dto.studentId },
+          },
+        },
+      },
+    });
+  
+    if (!lesson) {
+      throw new Error("Няма намерен урок за този ученик и учител");
+    }
+  
     return this.prismaService.attendance.create({
       data: {
-        status: dto.status,
+        status: dto.status || "ABSENT",
         studentId: dto.studentId,
-        lessonId: dto.lessonId,
-        createdAt: new Date(dto.date),
-        excused: dto.excused || false,
+        lessonId: lesson.id,
+        createdAt: new Date(dto.date), // очакваш дата от фронта
+        excused: dto.excused ?? false,
       },
     });
   }
+  
   async addGrade(teacherId: string, dto: any) {
     const lesson = await this.prismaService.lesson.findFirst({
       where: {

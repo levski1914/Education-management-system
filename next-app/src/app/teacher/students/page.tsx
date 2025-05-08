@@ -93,7 +93,7 @@ export default function TeacherStudents() {
                   setSelectedStudentId(s.id);
                   setShowModalFiles(true);
                 }}
-                className="text-blue-600 text-sm hover:underline"
+                className="text-blue-600 text-sm hover:underline cursor-pointer"
               >
                 📂 Досие
               </a>
@@ -105,6 +105,7 @@ export default function TeacherStudents() {
                 />
               )}
               <button
+              className="hover:underline cursor-pointer"
                 onClick={() => {
                   setSelectedStudentId(s.id);
                   setShowModal(true);
@@ -123,7 +124,7 @@ export default function TeacherStudents() {
                   setSelectedStudentId(s.id);
                   setShowAttendanceModal(true);
                 }}
-                className="text-yellow-600 text-sm hover:underline"
+                className="text-yellow-600 text-sm hover:underline cursor-pointer"
               >
                 📅 Отсъствие
               </button>
