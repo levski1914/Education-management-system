@@ -1,20 +1,32 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/app/utils/api";
+import AddGradeModal from "../components/TeacherStudents";
+import { StudentFiles } from "../components/StudentFiles";
+import StudentProfilePage from "../file/page";
+import StudentProfileModal from "../file/page";
+import AddAttendanceModal from "../components/AddAttendanceModal";
 
 export default function TeacherStudents() {
   const [classes, setClasses] = useState<any[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [students, setStudents] = useState<any[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [showModalFiles, setShowModalFiles] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
+    null
+  );
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
 
   useEffect(() => {
     const fetchClasses = async () => {
       const token = localStorage.getItem("token");
-      const res = await api.get("/teacher/my-classes", {
+      const res = await api.get("/teacher/my-classrooms", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setClasses(res.data);
     };
+
     fetchClasses();
   }, []);
 
@@ -69,16 +81,50 @@ export default function TeacherStudents() {
             </div>
 
             <div className="flex flex-wrap gap-2 mt-2">
+              {showModalFiles && selectedStudentId && (
+                <StudentProfileModal
+                  studentId={selectedStudentId}
+                  onClose={() => setShowModalFiles(false)}
+                />
+              )}
+
               <a
-                href={`/teacher/student/${s.id}`}
+                onClick={() => {
+                  setSelectedStudentId(s.id);
+                  setShowModalFiles(true);
+                }}
                 className="text-blue-600 text-sm hover:underline"
               >
                 📂 Досие
               </a>
-              <button className="text-green-600 text-sm hover:underline">
+
+              {showModal && (
+                <AddGradeModal
+                  studentId={selectedStudentId}
+                  onClose={() => setShowModal(false)}
+                />
+              )}
+              <button
+                onClick={() => {
+                  setSelectedStudentId(s.id);
+                  setShowModal(true);
+                }}
+              >
                 📝 Оценка
               </button>
-              <button className="text-yellow-600 text-sm hover:underline">
+              {showAttendanceModal && selectedStudentId && (
+                <AddAttendanceModal
+                  studentId={selectedStudentId}
+                  onClose={() => setShowAttendanceModal(false)}
+                />
+              )}
+              <button
+                onClick={() => {
+                  setSelectedStudentId(s.id);
+                  setShowAttendanceModal(true);
+                }}
+                className="text-yellow-600 text-sm hover:underline"
+              >
                 📅 Отсъствие
               </button>
               <button className="text-red-600 text-sm hover:underline">
