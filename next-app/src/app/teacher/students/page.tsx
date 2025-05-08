@@ -42,8 +42,7 @@ export default function TeacherStudents() {
           <option value="">-- Избери --</option>
           {classes.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.grade}
-              {c.letter} клас
+              {c.grade}{c.letter} клас
             </option>
           ))}
         </select>
@@ -71,7 +70,7 @@ export default function TeacherStudents() {
 
             <div className="flex flex-wrap gap-2 mt-2">
               <a
-                href={`/teacher/students/${s.id}`}
+                href={`/teacher/student/${s.id}`}
                 className="text-blue-600 text-sm hover:underline"
               >
                 📂 Досие

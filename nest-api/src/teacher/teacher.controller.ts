@@ -8,17 +8,23 @@ import { User } from '@prisma/client';
 @Controller('teacher')
 export class TeacherController {
   constructor(private readonly service: TeacherService) {}
-  @Get('class/:id/students')
-  @UseGuards(JwtAuthGuard)
-  getStudentsInClass(@Param('id') classId: string) {
-    return this.service.getStudentsInClass(classId);
-  }
+
 
   @Get('my-lessons')
   @UseGuards(JwtAuthGuard)
   getLessons(@Req() req) {
     return this.service.getLessons(req.user.id);
   }
+
+  @Get('class/:id/students')
+  @UseGuards(JwtAuthGuard)
+  getStudentsInClass(@Param('id') classId: string) {
+    console.log('classId:', classId);
+    return this.service.getStudentsInClass(classId);
+  }
+  
+
+
   @Get('my-classes')
   @UseGuards(JwtAuthGuard)
   getMyClasses(@CurrentUser() user: User) {
