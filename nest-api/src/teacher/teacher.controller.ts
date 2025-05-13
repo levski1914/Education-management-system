@@ -29,9 +29,6 @@ export class TeacherController {
     return this.service.getLessons(req.user.id);
   }
 
-  
-
-
   @Get('my-classes')
   @UseGuards(JwtAuthGuard)
   getMyClasses(@CurrentUser() user: User) {
