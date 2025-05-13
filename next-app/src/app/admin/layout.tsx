@@ -4,12 +4,28 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/app/utils/api";
+import { useRouter } from "next/navigation";
+import LogoutButton from "../teacher/components/Logout";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+
+const router=useRouter();
+useEffect(() => {
+  const user = localStorage.getItem("user");
+  if (!user) return router.push("/login");
+
+  const parsed = JSON.parse(user);
+  if (parsed.role !== "ADMIN" && parsed.role !== "SUPERADMIN") {
+    router.push("/unauthorized");
+  }
+}, []);
+
+
+
   const pathname = usePathname();
   const navItems = [
     { href: "/admin/dashboard", label: "Dashboard" },
@@ -24,6 +40,10 @@ export default function AdminLayout({
   useEffect(() => {
     const fetchWarnings = async () => {
       const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/login");
+        return;
+      }
       try {
         const res = await api.get("/students/warning-count", {
           headers: { Authorization: `Bearer ${token}` },
@@ -66,7 +86,7 @@ export default function AdminLayout({
           })}
         </nav>
       </div>
-
+          <LogoutButton />
       {/* Main content */}
       <div className="flex-1 p-6 overflow-y-auto">{children}</div>
     </div>
