@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import LogoutButton from "./components/Logout";
+import { useEffect } from "react";
 
 const links = [
   { href: "/teacher", label: "Моите класове", emoji: "📘" },
@@ -16,6 +18,19 @@ export default function TeacherLayout({
 }: {
   children: React.ReactNode;
 }) {
+
+  const router=useRouter()
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (!user) return router.push("/login");
+  
+    const parsed = JSON.parse(user);
+    if (parsed.role !== "TEACHER") {
+      router.push("/unauthorized");
+    }
+  }, []);
+  
+
   const pathname = usePathname();
 
   return (
@@ -35,6 +50,7 @@ export default function TeacherLayout({
             </Link>
           ))}
         </nav>
+        <LogoutButton />
       </aside>
 
       <main className="flex-1 bg-gray-100">{children}</main>
