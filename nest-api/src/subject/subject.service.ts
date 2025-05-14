@@ -14,7 +14,10 @@ export class SubjectService {
       data: { name, schoolId },
     });
   }
-
+  async findById(id: string) {
+    return this.prisma.subject.findUnique({ where: { id } });
+  }
+  
   async delete(id: string) {
     return this.prisma.subject.delete({ where: { id } });
   }

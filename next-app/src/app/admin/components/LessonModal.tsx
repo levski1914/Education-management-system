@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/app/utils/api";
+import { getTodayDayOfWeek } from "@/app/utils/days";
 
 export default function LessonModal({
   classroomId,
@@ -35,8 +36,9 @@ export default function LessonModal({
     const now = new Date();
 
     // Сравни дали е същия ден от седмицата (1-Понеделник до 5-Петък)
-    const today = now.getDay(); // неделя=0, понеделник=1...
+    const today = getTodayDayOfWeek(); // връща 1–7
     const isSameDay = today === lesson.dayOfWeek;
+
 
     if (!isSameDay) return false;
 

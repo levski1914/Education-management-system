@@ -16,7 +16,11 @@ import { CreateSubjectDto } from './dto/create-subject.dto';
 @UseGuards(JwtAuthGuard)
 export class SubjectController {
   constructor(private readonly subjectsService: SubjectService) {}
-
+  @Get(':id')
+  getOne(@Param('id') id: string) {
+    return this.subjectsService.findById(id);
+  }
+  
   @Get()
   getAll(@Req() req) {
     return this.subjectsService.findAll(req.user.schoolId);
