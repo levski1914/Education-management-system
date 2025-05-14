@@ -18,6 +18,18 @@ export class AttendanceController {
     private readonly service: AttendanceService,
     private prisma: PrismaService,
   ) {}
+  @Get('lesson/:lessonId')
+  @UseGuards(JwtAuthGuard)
+  getAttendanceForLesson(@Param('lessonId') lessonId: string) {
+    return this.prisma.attendance.findMany({
+      where: { lessonId },
+      select: {
+        studentId: true,
+        status: true,
+      },
+    });
+  }
+
   @Put(':id/excuse')
   @UseGuards(JwtAuthGuard)
   excuseAttendance(@Param('id') id: string) {

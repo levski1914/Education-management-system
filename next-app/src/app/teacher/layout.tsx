@@ -6,6 +6,7 @@ import LogoutButton from "./components/Logout";
 import { useEffect } from "react";
 
 const links = [
+  { href: "/teacher/profile", label: "Моят Профил", emoji: "👤" },
   { href: "/teacher", label: "Моите класове", emoji: "📘" },
   { href: "/teacher/schedule", label: "Разписание", emoji: "🕒" },
   { href: "/teacher/students", label: "Ученици", emoji: "👨‍🎓" },
@@ -18,18 +19,16 @@ export default function TeacherLayout({
 }: {
   children: React.ReactNode;
 }) {
-
-  const router=useRouter()
+  const router = useRouter();
   useEffect(() => {
     const user = localStorage.getItem("user");
     if (!user) return router.push("/login");
-  
+
     const parsed = JSON.parse(user);
     if (parsed.role !== "TEACHER") {
       router.push("/unauthorized");
     }
   }, []);
-  
 
   const pathname = usePathname();
 
