@@ -17,7 +17,10 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 @Controller('classrooms')
 export class ClassroomsController {
   constructor(private readonly service: ClassroomsService) {}
-
+  @Get(':id')
+  getOne(@Param('id') id: string) {
+    return this.service.getOneById(id);
+  }
   @Post()
   @UseGuards(JwtAuthGuard)
   create(@Body() dto: CreateClassDto, @Req() req) {
@@ -52,8 +55,5 @@ export class ClassroomsController {
     return this.service.assignClassTeacher(classId, teacherId);
   }
 
-  @Get(':id')
-  getOne(@Param('id') id: string) {
-    return this.service.getOneById(id);
-  }
+
 }
