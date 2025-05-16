@@ -22,7 +22,8 @@ model User {
 
   schoolId String?
   school   School? @relation(fields: [schoolId], references: [id])
-
+sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
   firstName  String?
   lastName   String?
   egn        String? @unique
@@ -79,7 +80,7 @@ model Classroom {
   students       User[]  @relation("ClassroomStudents")
   classTeacher   User?   @relation("ClassroomTeacher", fields: [classTeacherId], references: [id])
   classTeacherId String? @unique
-
+ messages Message[]
   createdAt DateTime @default(now())
   lessons   Lesson[]
 
@@ -147,6 +148,25 @@ model StudentFile {
   student   User     @relation(fields: [studentId], references: [id])
   createdAt DateTime @default(now())
 }
+model Message {
+  id          String   @id @default(uuid())
+  title       String
+  body        String
+
+  senderId    String
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+
+  receiverId  String?   // ако е до конкретен потребител
+  receiver    User?     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  toRole      Role?     // ако е до роля (напр. TEACHER)
+  classId     String?   // ако е до клас
+  classroom   Classroom? @relation(fields: [classId], references: [id])
+  read       Boolean  @default(false)
+  readBy      String[] @default([])
+  createdAt   DateTime @default(now())
+}
+
 
 enum AttendanceStatus {
   PRESENT

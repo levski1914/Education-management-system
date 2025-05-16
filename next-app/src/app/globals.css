@@ -117,7 +117,7 @@ h1{
   color: var(--sidebar-foreground) !important; 
 }
 
-main{
+main, .admin{
   background-color: var(--chart-3) !important;
   color:black !important;
 }

@@ -21,6 +21,7 @@ import { StudentsController } from './students/students.controller';
 import { StudentFilesModule } from './student-files/student-files.module';
 import { ParentsModule } from './parents/parents.module';
 import { TeacherModule } from './teacher/teacher.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { TeacherModule } from './teacher/teacher.module';
     StudentFilesModule,
     ParentsModule,
     TeacherModule,
+    MessagesModule,
   ],
   controllers: [
     AppController,

@@ -12,19 +12,18 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const router = useRouter();
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (!user) return router.push("/login");
 
-const router=useRouter();
-useEffect(() => {
-  const user = localStorage.getItem("user");
-  if (!user) return router.push("/login");
-
-  const parsed = JSON.parse(user);
-  if (parsed.role !== "ADMIN" && parsed.role !== "SUPERADMIN") {
-    router.push("/unauthorized");
-  }
-}, []);
-
-
+    const parsed = JSON.parse(user);
+    if (parsed.role !== "ADMIN" && parsed.role !== "SUPERADMIN") {
+      router.push("/unauthorized");
+    }
+    fetchUnread();
+  }, []);
 
   const pathname = usePathname();
   const navItems = [
@@ -55,7 +54,13 @@ useEffect(() => {
     };
     fetchWarnings();
   }, []);
-
+  const fetchUnread = async () => {
+    const token = localStorage.getItem("token");
+    const res = await api.get("/messages/unread-count", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setUnreadCount(res.data.count);
+  };
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
@@ -85,10 +90,20 @@ useEffect(() => {
             );
           })}
         </nav>
+        <LogoutButton />
       </div>
-          <LogoutButton />
+      <div className="mt-6">
+        <Link href="/admin/messages" className="relative inline-block">
+          <span className="text-2xl">🔔</span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
+        </Link>
+      </div>
       {/* Main content */}
-      <div className="flex-1 p-6 overflow-y-auto">{children}</div>
+      <div className="flex-1 p-6 admin overflow-y-auto">{children}</div>
     </div>
   );
 }

@@ -41,7 +41,7 @@ export default function AdminDashboard() {
   if (!school || !stats) return <p className="text-white">Loading.....</p>;
 
   return (
-    <div className="text-white space-y-4">
+    <div className=" space-y-4 ">
       <h1 className="text-2xl text-gray-800 font-bold">
         🏫 Училище: {school.name} – {school.city}
       </h1>

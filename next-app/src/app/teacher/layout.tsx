@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import LogoutButton from "./components/Logout";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../utils/api";
 
 const links = [
   { href: "/teacher/profile", label: "Моят Профил", emoji: "👤" },
@@ -20,6 +21,7 @@ export default function TeacherLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const [unreadCount, setUnreadCount] = useState(0);
   useEffect(() => {
     const user = localStorage.getItem("user");
     if (!user) return router.push("/login");
@@ -28,10 +30,18 @@ export default function TeacherLayout({
     if (parsed.role !== "TEACHER") {
       router.push("/unauthorized");
     }
+
+    fetchUnread();
   }, []);
 
   const pathname = usePathname();
-
+  const fetchUnread = async () => {
+    const token = localStorage.getItem("token");
+    const res = await api.get("/messages/unread-count", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setUnreadCount(res.data.count);
+  };
   return (
     <div className="flex min-h-screen">
       <aside className="w-64 bg-gray-900 text-white p-4">
@@ -49,6 +59,16 @@ export default function TeacherLayout({
             </Link>
           ))}
         </nav>
+        <div className="mt-6">
+          <Link href="/teacher/messages" className="relative inline-block">
+            <span className="text-2xl">🔔</span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </Link>
+        </div>
         <LogoutButton />
       </aside>
 
