@@ -3,10 +3,19 @@
 import { useState } from "react";
 import MessagesList from "@/app/teacher/messages/MessagesList";
 import SendMessage from "@/app/teacher/messages/SendMessages";
+import { api } from "@/app/utils/api";
 
 export default function MessagesPage() {
   const [view, setView] = useState<"inbox" | "send">("inbox");
+  const [unreadCount, setUnreadCount] = useState(0);
 
+  const fetchUnread = async () => {
+    const token = localStorage.getItem("token");
+    const res = await api.get("/messages/unread-count", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setUnreadCount(res.data.count);
+  };
   return (
     <div className="p-6">
       <div className="flex gap-4 mb-6">
@@ -28,7 +37,11 @@ export default function MessagesPage() {
         </button>
       </div>
 
-      {view === "inbox" ? <MessagesList /> : <SendMessage />}
+      {view === "inbox" ? (
+        <MessagesList />
+      ) : (
+        <SendMessage fetchUnread={fetchUnread} />
+      )}
     </div>
   );
 }

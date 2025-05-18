@@ -19,19 +19,49 @@ import { CreateMessageDto } from './dto/create-messages.dto';
 export class MessagesController {
   constructor(private prisma: PrismaService) {}
   @Get('unread-count')
-  @UseGuards(JwtAuthGuard)
-  async getUnreadCount(@Req() req) {
+  async getUnreadCount(@CurrentUser() user: User) {
     const count = await this.prisma.message.count({
       where: {
-        receiverId: req.user.id,
-        read: false,
+        receiverId: user.id, // само получени
+        NOT: {
+          readBy: {
+            has: user.id,
+          },
+        },
       },
     });
     return { count };
   }
+
+  @Put('mark-all-read/:userId')
+  async markAllFromUserAsRead(
+    @Param('userId') senderId: string,
+    @CurrentUser() user: User,
+  ) {
+    const messages = await this.prisma.message.findMany({
+      where: {
+        senderId,
+        receiverId: user.id,
+        NOT: {
+          readBy: { has: user.id },
+        },
+      },
+    });
+
+    for (const msg of messages) {
+      await this.prisma.message.update({
+        where: { id: msg.id },
+        data: {
+          readBy: { push: user.id },
+        },
+      });
+    }
+
+    return { updated: messages.length };
+  }
+
   @Get('conversations')
   async getConversations(@CurrentUser() user: User) {
-    // Get all distinct users who have messaged this user or received from him
     const sent = await this.prisma.message.findMany({
       where: { senderId: user.id, receiverId: { not: null } },
       select: { receiverId: true },
@@ -56,7 +86,28 @@ export class MessagesController {
       select: { id: true, firstName: true, lastName: true, role: true },
     });
 
-    return users;
+    // get last message per conversation
+    const messages = await Promise.all(
+      users.map(async (u) => {
+        const lastMsg = await this.prisma.message.findFirst({
+          where: {
+            OR: [
+              { senderId: user.id, receiverId: u.id },
+              { senderId: u.id, receiverId: user.id },
+            ],
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+        return {
+          ...u,
+          lastMessage: lastMsg?.body || '',
+          lastMessageId: lastMsg?.id || '',
+          unread: lastMsg ? !lastMsg.readBy.includes(user.id) : false,
+        };
+      }),
+    );
+
+    return messages;
   }
 
   @Get('conversation/:userId')

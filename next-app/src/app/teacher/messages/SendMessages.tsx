@@ -2,8 +2,21 @@
 
 import { useEffect, useState, useRef } from "react";
 import { api } from "@/app/utils/api";
+export function getCurrentUserId() {
+  if (typeof window === "undefined") return null;
+  try {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    return user.id || null;
+  } catch {
+    return null;
+  }
+}
 
-export default function Messenger() {
+interface MessengerProps {
+  fetchUnread: () => void;
+}
+
+export default function Messenger({ fetchUnread }: MessengerProps) {
   const [conversations, setConversations] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
@@ -14,7 +27,32 @@ export default function Messenger() {
   const [selectedNewUserId, setSelectedNewUserId] = useState("");
   const [newTitle, setNewTitle] = useState("");
 
-  const currentUserId = localStorage.getItem("userId");
+  const currentUserId = getCurrentUserId();
+  const [unreadCount, setUnreadCount] = useState(0);
+  useEffect(() => {
+    fetchUnread();
+  }, []);
+  const handleConversationClick = async (
+    userId: string,
+    lastMessageId: string
+  ) => {
+    setSelectedUserId(userId);
+    await fetchConversationMessages(userId);
+
+    if (lastMessageId) {
+      const token = localStorage.getItem("token");
+      await api.put(
+        `/messages/mark-all-read/${userId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (fetchUnread) {
+        fetchUnread();
+      } // нулира само за този разговор
+      await fetchConversations(); // обнови bold-а и състоянието
+    }
+  };
 
   const fetchConversations = async () => {
     const token = localStorage.getItem("token");
@@ -73,7 +111,7 @@ export default function Messenger() {
               setShowNewMessageForm(true);
               fetchAllUsers();
             }}
-            className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+            className="bg-blue-600 cursor-pointer text-white px-3 py-1 rounded hover:bg-blue-700"
           >
             ✉️ Изпрати съобщение
           </button>
@@ -84,7 +122,7 @@ export default function Messenger() {
             <select
               value={selectedNewUserId}
               onChange={(e) => setSelectedNewUserId(e.target.value)}
-              className="w-full p-2 border rounded"
+              className="w-full cursor-pointer p-2 border rounded"
             >
               <option value="">👤 Избери потребител...</option>
               {allUsers.map((u) => (
@@ -106,54 +144,75 @@ export default function Messenger() {
               onChange={(e) => setNewMessage(e.target.value)}
               className="w-full p-2 border rounded"
             />
-            <button
-              onClick={async () => {
-                const token = localStorage.getItem("token");
-                await api.post(
-                  "/messages",
-                  {
-                    body: newMessage,
-                    title: newTitle,
-                    receiverId: selectedNewUserId,
-                  },
-                  { headers: { Authorization: `Bearer ${token}` } }
-                );
-                setShowNewMessageForm(false);
-                setNewMessage("");
-                setNewTitle("");
-                setSelectedNewUserId("");
-                fetchConversations(); // Обнови списъка
-              }}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-            >
-              📤 Изпрати
-            </button>
+            <div className="flex justify-between">
+              <button
+                onClick={async () => {
+                  const token = localStorage.getItem("token");
+                  await api.post(
+                    "/messages",
+                    {
+                      body: newMessage,
+                      title: newTitle,
+                      receiverId: selectedNewUserId,
+                    },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                  );
+                  setShowNewMessageForm(false);
+                  setNewMessage("");
+                  setNewTitle("");
+                  setSelectedNewUserId("");
+                  fetchConversations(); // Обнови списъка
+                }}
+                className="bg-green-600 cursor-pointer text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                📤 Изпрати
+              </button>
+              <button
+                onClick={() => {
+                  setShowNewMessageForm(false);
+                }}
+                className="bg-red-600 cursor-pointer text-white px-3 py-1 rounded hover:bg-red-300"
+              >
+                Затвори
+              </button>
+            </div>
           </div>
         )}
 
         <h2 className="text-lg font-semibold mb-4">Разговори</h2>
-        {conversations.map((user) => (
+        {conversations.map((conv) => (
           <div
-            key={user.id}
-            onClick={() => fetchConversationMessages(user.id)}
-            className={`p-2 cursor-pointer rounded hover:bg-gray-200 ${
-              selectedUserId === user.id ? "bg-gray-300 font-semibold" : ""
+            key={conv.id}
+            onClick={() => handleConversationClick(conv.id, conv.lastMessageId)}
+            className={`p-2 cursor-pointer rounded border my-2 hover:bg-gray-200 ${
+              selectedUserId === conv.id ? "bg-gray-300" : ""
             }`}
           >
-            {user.firstName} {user.lastName} ({user.role})
+            <div className="font-medium">
+              {conv.firstName} {conv.lastName} ({conv.role})
+            </div>
+            <div
+              className={`text-sm ${
+                conv.unread ? "font-bold" : "text-gray-500"
+              }`}
+            >
+              {conv.lastMessage}
+            </div>
           </div>
+          // <hr />
         ))}
       </div>
 
       {/* Right: Chat */}
-      <div className="w-2/3 pl-4 flex flex-col border-l">
+      {/* Right: Chat area */}
+      <div className="w-2/3 pl-4 flex flex-col border-l h-full">
+        {/* Chat messages container */}
         <div
           ref={chatContainerRef}
           className="flex-1 overflow-y-auto space-y-2 p-4 bg-yellow-200 rounded shadow-inner"
         >
           {messages.map((msg) => {
             const isMine = msg.senderId === currentUserId;
-            const sender = msg.sender || {};
             const senderName = isMine
               ? "Аз"
               : msg.sender?.firstName || msg.sender?.lastName
@@ -165,45 +224,47 @@ export default function Messenger() {
               : "Неизвестен";
 
             return (
-              <div
-                key={msg.id}
-                className={`w-full flex ${
-                  isMine ? "justify-end bg-blue-500" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`max-w-[50%] p-3 rounded-lg shadow text-sm ${
-                    isMine
-                      ? "bg-blue-100 text-right self-end"
-                      : "bg-white text-left self-start"
-                  }`}
-                >
-                  <p className="text-xs text-gray-600 font-semibold mb-1">
-                    {senderName}
-                  </p>
-                  <p className="text-base">{msg.body}</p>
-                </div>
+              <div key={msg.id} className="w-full flex">
+                {isMine ? (
+                  <div className="ml-auto bg-blue-500 p-3 rounded-lg shadow text-sm max-w-[60%] text-right">
+                    <p className="text-xs text-right text-black-600  font-semibold mb-1">
+                      {senderName}:
+                    </p>
+                    <p className="text-white border-top border-t-indigo-500">
+                      {msg.body}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mr-auto bg-white p-3 rounded-lg shadow text-sm max-w-[60%] text-left">
+                    <p className="text-xs text-blue-600  font-bold mb-1">
+                      {senderName}
+                    </p>
+                    <p>{msg.body}</p>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* Input area */}
-        <div className="flex mt-2 gap-2">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Напиши съобщение..."
-            className="flex-1 p-2 border rounded"
-          />
-          <button
-            onClick={sendMessage}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Изпрати
-          </button>
-        </div>
+        {/* Input field at bottom */}
+        {selectedUserId && (
+          <div className="flex gap-2 p-4 border-t bg-yellow-100">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Напиши съобщение..."
+              className="flex-1 p-2 border rounded"
+            />
+            <button
+              onClick={sendMessage}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Изпрати
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
