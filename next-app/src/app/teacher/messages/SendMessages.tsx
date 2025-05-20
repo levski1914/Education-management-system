@@ -15,7 +15,34 @@ export function getCurrentUserId() {
 interface MessengerProps {
   fetchUnread: () => void;
 }
+const formatTime = (isoString: string) => {
+  const date = new Date(isoString);
+  return date.toLocaleTimeString("bg-BG", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
+const formatDate = (isoString: string) => {
+  const date = new Date(isoString);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  const isToday = date.toDateString() === today.toDateString();
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+
+  if (isToday) return "Днес";
+  if (isYesterday) return "Вчера";
+
+  return date.toLocaleDateString("bg-BG", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+};
+
+// agni lopez
 export default function Messenger({ fetchUnread }: MessengerProps) {
   const [conversations, setConversations] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -206,13 +233,16 @@ export default function Messenger({ fetchUnread }: MessengerProps) {
       {/* Right: Chat */}
       {/* Right: Chat area */}
       <div className="w-2/3 pl-4 flex flex-col border-l h-full">
-        {/* Chat messages container */}
-        <div
-          ref={chatContainerRef}
-          className="flex-1 overflow-y-auto space-y-2 p-4 bg-yellow-200 rounded shadow-inner"
-        >
-          {messages.map((msg) => {
+        {/* Header: Името на събеседника */}
+        <div className="p-2 text-lg font-bold text-blue-700 border-b border-blue-500 bg-white rounded">
+          {(() => {
+            if (!messages.length) return "Без съобщения";
+
+            const msg = messages.find((m) => m.senderId !== currentUserId);
+            if (!msg) return "Аз";
+
             const isMine = msg.senderId === currentUserId;
+
             const senderName = isMine
               ? "Аз"
               : msg.sender?.firstName || msg.sender?.lastName
@@ -223,28 +253,72 @@ export default function Messenger({ fetchUnread }: MessengerProps) {
               ? "АДМИН"
               : "Неизвестен";
 
-            return (
-              <div key={msg.id} className="w-full flex">
-                {isMine ? (
-                  <div className="ml-auto bg-blue-500 p-3 rounded-lg shadow text-sm max-w-[60%] text-right">
-                    <p className="text-xs text-right text-black-600  font-semibold mb-1">
-                      {senderName}:
-                    </p>
-                    <p className="text-white border-top border-t-indigo-500">
-                      {msg.body}
-                    </p>
+            return senderName;
+          })()}
+        </div>
+
+        <div
+          ref={chatContainerRef}
+          className="flex-1 overflow-y-auto space-y-2 p-4 bg-yellow-200 rounded shadow-inner"
+        >
+          {(() => {
+            let lastRenderedDate = "";
+
+            return messages.map((msg, index) => {
+              const isMine = msg.senderId === currentUserId;
+              const senderName = isMine
+                ? "Аз"
+                : msg.sender?.firstName || msg.sender?.lastName
+                ? `${msg.sender?.firstName || ""} ${
+                    msg.sender?.lastName || ""
+                  }`.trim()
+                : msg.sender?.role === "ADMIN"
+                ? "АДМИН"
+                : "Неизвестен";
+
+              const msgDate = new Date(msg.createdAt).toDateString();
+              const showDateHeader = msgDate !== lastRenderedDate;
+              lastRenderedDate = msgDate;
+
+              const isLastInGroup =
+                index === messages.length - 1 ||
+                messages[index + 1].senderId !== msg.senderId;
+
+              return (
+                <div key={msg.id}>
+                  {showDateHeader && (
+                    <div className="text-center text-gray-600 text-xs my-2">
+                      {formatDate(msg.createdAt)}
+                    </div>
+                  )}
+
+                  <div className="w-full flex flex-col items-end">
+                    <div
+                      className={`${
+                        isMine
+                          ? "ml-auto bg-blue-500 text-white"
+                          : "mr-auto bg-white text-black"
+                      } p-3 rounded-lg shadow text-sm max-w-[60%]`}
+                    >
+                      <p>{msg.body}</p>
+                    </div>
+
+                    {isLastInGroup && (
+                      <span
+                        className={`text-xs mt-1 ${
+                          isMine
+                            ? "text-right text-gray-600 pr-2"
+                            : "text-left text-gray-600 pl-2"
+                        }`}
+                      >
+                        {formatTime(msg.createdAt)}
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <div className="mr-auto bg-white p-3 rounded-lg shadow text-sm max-w-[60%] text-left">
-                    <p className="text-xs text-blue-600  font-bold mb-1">
-                      {senderName}
-                    </p>
-                    <p>{msg.body}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                </div>
+              );
+            });
+          })()}
         </div>
 
         {/* Input field at bottom */}
