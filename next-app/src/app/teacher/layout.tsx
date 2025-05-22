@@ -11,7 +11,7 @@ const links = [
   { href: "/teacher", label: "Моите класове", emoji: "📘" },
   { href: "/teacher/schedule", label: "Разписание", emoji: "🕒" },
   { href: "/teacher/students", label: "Ученици", emoji: "👨‍🎓" },
-  { href: "/teacher/grades", label: "Оценки", emoji: "📝" },
+  { href: "/teacher/consultations", label: "Консултации", emoji: "📝" },
   { href: "/teacher/attendance", label: "Присъствия", emoji: "📅" },
 ];
 

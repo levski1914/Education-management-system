@@ -14,51 +14,51 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  role      Role
-  createdAt DateTime @default(now())
-
-  schoolId String?
-  school   School? @relation(fields: [schoolId], references: [id])
-sentMessages     Message[] @relation("SentMessages")
-  receivedMessages Message[] @relation("ReceivedMessages")
-  firstName  String?
-  lastName   String?
-  egn        String? @unique
-  address    String?
-  profilePic String?
-  parentId   String?
-  parent     User?   @relation("ParentChild", fields: [parentId], references: [id])
-  children   User[]  @relation("ParentChild")
+  id               String             @id @default(uuid())
+  email            String             @unique
+  password         String
+  role             Role
+  createdAt        DateTime           @default(now())
+  teacherSlots     ConsultationSlot[] @relation("TeacherSlots")
+  studentBookings  ConsultationSlot[] @relation("StudentBookings")
+  schoolId         String?
+  school           School?            @relation(fields: [schoolId], references: [id])
+  sentMessages     Message[]          @relation("SentMessages")
+  receivedMessages Message[]          @relation("ReceivedMessages")
+  firstName        String?
+  lastName         String?
+  egn              String?            @unique
+  address          String?
+  profilePic       String?
+  parentId         String?
+  parent           User?              @relation("ParentChild", fields: [parentId], references: [id])
+  children         User[]             @relation("ParentChild")
 
   classId          String?
-  class            Classroom?    @relation("ClassroomStudents", fields: [classId], references: [id])
-  leadsClass       Classroom?    @relation("ClassroomTeacher")
-  isWarningCleared Boolean @default(false)
+  class            Classroom? @relation("ClassroomStudents", fields: [classId], references: [id])
+  leadsClass       Classroom? @relation("ClassroomTeacher")
+  isWarningCleared Boolean    @default(false)
 
-  lessonsTaught    Lesson[]      @relation("TeacherLessons")
-  Grade            Grade[]
-  Attendance       Attendance[]
-  StudentFile      StudentFile[]
+  lessonsTaught Lesson[]      @relation("TeacherLessons")
+  Grade         Grade[]
+  Attendance    Attendance[]
+  StudentFile   StudentFile[]
 
-    parentLogsAsStudent ParentLog[] @relation("LogStudent")
+  parentLogsAsStudent ParentLog[] @relation("LogStudent")
   parentLogsAsParent  ParentLog[] @relation("LogParent")
-
 }
+
 model ParentLog {
   id        String   @id @default(uuid())
-  action    String   // "ASSIGN" | "UNASSIGN"     
+  action    String // "ASSIGN" | "UNASSIGN"     
   createdAt DateTime @default(now())
 
   studentId String
   parentId  String
 
   student User @relation("LogStudent", fields: [studentId], references: [id])
-  parent  User @relation("LogParent",  fields: [parentId],  references: [id])
+  parent  User @relation("LogParent", fields: [parentId], references: [id])
 }
-
 
 model School {
   id        String      @id @default(uuid())
@@ -71,18 +71,18 @@ model School {
 }
 
 model Classroom {
-  id             String  @id @default(uuid())
+  id             String    @id @default(uuid())
   name           String
   grade          Int
   letter         String
   schoolId       String
-  school         School  @relation(fields: [schoolId], references: [id])
-  students       User[]  @relation("ClassroomStudents")
-  classTeacher   User?   @relation("ClassroomTeacher", fields: [classTeacherId], references: [id])
-  classTeacherId String? @unique
- messages Message[]
-  createdAt DateTime @default(now())
-  lessons   Lesson[]
+  school         School    @relation(fields: [schoolId], references: [id])
+  students       User[]    @relation("ClassroomStudents")
+  classTeacher   User?     @relation("ClassroomTeacher", fields: [classTeacherId], references: [id])
+  classTeacherId String?   @unique
+  messages       Message[]
+  createdAt      DateTime  @default(now())
+  lessons        Lesson[]
 
   @@unique([grade, letter, schoolId])
 }
@@ -139,7 +139,6 @@ model Attendance {
   excused   Boolean          @default(false) // 🆕 новото поле
 }
 
-
 model StudentFile {
   id        String   @id @default(uuid())
   name      String
@@ -148,25 +147,48 @@ model StudentFile {
   student   User     @relation(fields: [studentId], references: [id])
   createdAt DateTime @default(now())
 }
+
 model Message {
-  id          String   @id @default(uuid())
-  title       String
-  body        String
+  id    String @id @default(uuid())
+  title String
+  body  String
 
-  senderId    String
-  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  senderId String
+  sender   User   @relation("SentMessages", fields: [senderId], references: [id])
 
-  receiverId  String?   // ако е до конкретен потребител
-  receiver    User?     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  receiverId String? // ако е до конкретен потребител
+  receiver   User?   @relation("ReceivedMessages", fields: [receiverId], references: [id])
 
-  toRole      Role?     // ако е до роля (напр. TEACHER)
-  classId     String?   // ако е до клас
-  classroom   Classroom? @relation(fields: [classId], references: [id])
-  read       Boolean  @default(false)
-  readBy      String[] @default([])
-  createdAt   DateTime @default(now())
+  toRole    Role? // ако е до роля (напр. TEACHER)
+  classId   String? // ако е до клас
+  classroom Classroom? @relation(fields: [classId], references: [id])
+  read      Boolean    @default(false)
+  readBy    String[]   @default([])
+  createdAt DateTime   @default(now())
 }
 
+model ConsultationSlot {
+  id        String @id @default(uuid())
+  teacherId String
+  teacher   User   @relation("TeacherSlots", fields: [teacherId], references: [id])
+
+  date        DateTime // Начало на срещата
+  durationMin Int // Продължителност (в минути)
+
+  bookedById String? // Ученик (ако е заето)
+  bookedBy   User?   @relation("StudentBookings", fields: [bookedById], references: [id])
+
+  status SlotStatus @default(AVAILABLE)
+  notes  String?
+
+  createdAt DateTime @default(now())
+}
+
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  CANCELLED
+}
 
 enum AttendanceStatus {
   PRESENT
