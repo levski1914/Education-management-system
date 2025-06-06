@@ -54,7 +54,9 @@ export class ConsultationsController {
 
   @Delete(':id')
   async cancel(@CurrentUser() user: User, @Param('id') id: string) {
-    const slot = await this.prisma.consultationSlot.findUnique({ where: { id } });
+    const slot = await this.prisma.consultationSlot.findUnique({
+      where: { id },
+    });
 
     if (!slot || slot.teacherId !== user.id) {
       throw new Error('Нямате права да изтриете този слот');
