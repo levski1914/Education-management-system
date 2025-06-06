@@ -61,13 +61,24 @@ const res = await api.get("/consultations/mine", {
     };
   });
 
-  const handleSlotSelect = async ({ start }: { start: Date }) => {
-    const token = localStorage.getItem("token");
-    const durationMin = 30;
-    const confirm = window.confirm(
-      `Създаване на слот на ${start.toLocaleString()} за ${durationMin} мин.?`
-    );
-    if (!confirm) return;
+  const handleSlotSelect = async ({
+  start,
+  end,
+}: {
+  start: Date;
+  end: Date;
+}) => {
+  const durationMin = Math.round((end.getTime() - start.getTime()) / 60000);
+  if (durationMin < 15) {
+    toast.warning("Минималната продължителност е 15 минути.");
+    return;
+  }
+     const token = localStorage.getItem("token");
+
+  const confirm = window.confirm(
+    `Създаване на слот от ${start.toLocaleTimeString()} до ${end.toLocaleTimeString()} за ${durationMin} минути?`
+  );
+  if (!confirm) return;
 
     try {
     await api.post(
