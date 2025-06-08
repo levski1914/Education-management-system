@@ -7,8 +7,7 @@ export default function AddGradeModal({ studentId, onClose }: any) {
   const [subjects, setSubjects] = useState([]);
   const [type, setType] = useState("контролно");
 
-
- const modalRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -53,7 +52,10 @@ export default function AddGradeModal({ studentId, onClose }: any) {
 
   return (
     <div className="fixed inset-0 bg-black/50 bg-opacity-30 flex items-center justify-center z-50">
-      <div ref={modalRef} className="bg-white p-6 rounded-lg shadow-lg w-96 space-y-4">
+      <div
+        ref={modalRef}
+        className="bg-white p-6 rounded-lg shadow-lg w-96 space-y-4"
+      >
         <h2 className="text-lg font-bold">📝 Добави оценка</h2>
 
         <div>
@@ -97,7 +99,10 @@ export default function AddGradeModal({ studentId, onClose }: any) {
         </div>
 
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="text-gray-600 cursor-pointer hover:bg-red-600 hover:text-white">
+          <button
+            onClick={onClose}
+            className="text-gray-600 cursor-pointer hover:bg-red-600 hover:text-white"
+          >
             Затвори
           </button>
           <button

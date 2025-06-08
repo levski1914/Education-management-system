@@ -16,6 +16,7 @@ datasource db {
 model User {
   id               String             @id @default(uuid())
   email            String             @unique
+  extraEmail       String? // 👈 новото п
   password         String
   role             Role
   createdAt        DateTime           @default(now())

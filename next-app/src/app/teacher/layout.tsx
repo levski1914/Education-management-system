@@ -12,7 +12,7 @@ const links = [
   { href: "/teacher/schedule", label: "Разписание", emoji: "🕒" },
   { href: "/teacher/students", label: "Ученици", emoji: "👨‍🎓" },
   { href: "/teacher/consultations", label: "Консултации", emoji: "📝" },
-  { href: "/teacher/attendance", label: "Присъствия", emoji: "📅" },
+  // { href: "/teacher/attendance", label: "Присъствия", emoji: "📅" },
 ];
 
 export default function TeacherLayout({

@@ -5,6 +5,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
 import { RegisterDirectorDto } from './dto/register-director.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -19,6 +20,19 @@ export class UsersService {
       include: {
         class: true,
         children: true,
+      },
+    });
+  }
+
+  async updateOwnProfile(userId: string, dto: UpdateProfileDto) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        profilePic: dto.profilePic,
+        extraEmail: dto.extraEmail, // 👈
       },
     });
   }

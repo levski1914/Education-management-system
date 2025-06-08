@@ -22,6 +22,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { Role } from '@prisma/client';
 import { CurrentUser } from './dto/current-user.decorator';
 import { User } from '@prisma/client';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('users')
 export class UsersController {
@@ -111,6 +112,11 @@ export class UsersController {
   @Post('register-director')
   registerDirector(@Body() dto: RegisterDirectorDto) {
     return this.usersService.registerDirector(dto);
+  }
+  @UseGuards(JwtAuthGuard)
+  @Put('me')
+  updateOwnProfile(@CurrentUser() user: User, @Body() dto: UpdateProfileDto) {
+    return this.usersService.updateOwnProfile(user.id, dto);
   }
 
   @Patch(':id')
