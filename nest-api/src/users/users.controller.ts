@@ -45,11 +45,37 @@ export class UsersController {
     return this.usersService.unassignParent(studentId);
   }
 
-  @UseGuards(JwtAuthGuard)
+
   @Get('me')
-  getMe(@Request() req) {
-    return req.user;
+  @UseGuards(JwtAuthGuard)
+  async getMe(@Request() req) {
+    return this.prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: {
+        children: {
+          include: { class: true },
+        },
+      },
+    });
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(":studentId/details")
+  async getStudentDetails(@Param('studentId') studentId:string){
+    const grades = await this.prisma.grade.findMany({
+      where:{studentId},
+      include:{subject:true},
+    })
+    const attendances=await this.prisma.attendance.findMany({
+      where:{studentId},
+    })
+    const warnings=await this.prisma.message.findMany({
+      where:{receiverId:studentId,toRole:null}
+    })
+
+    return {grades,attendances,warnings}
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get(':studentId/parent-log')
   getParentLog(@Param('studentId') studentId: string) {

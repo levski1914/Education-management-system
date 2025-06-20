@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import LogoutButton from "./components/Logout";
+import MyStudents from "./components/MyStudents";
 
 export default function ParentPanel() {
   const [tab, setTab] = useState<"dashboard" | "students" | "messages" | "profile">("dashboard");
@@ -45,7 +46,10 @@ export default function ParentPanel() {
       {/* Main content */}
       <div className="flex-1 p-6 overflow-auto">
         {tab === "dashboard" && <p>Тук ще има обобщена информация.</p>}
-        {tab === "students" && <p>Тук ще е секцията "Моите ученици".</p>}
+        {tab === "students" && <>
+        
+          <MyStudents />
+        </>}
         {tab === "messages" && <p>Съобщения и комуникация.</p>}
         {tab === "profile" && <p>Настройки на профила.</p>}
       </div>
