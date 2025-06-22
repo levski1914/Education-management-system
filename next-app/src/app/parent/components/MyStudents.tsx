@@ -1,7 +1,6 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { api } from "@/app/utils/api";
 import { toast } from "react-toastify";
-import { useEffect, useState } from "react";
 
 type Student = {
   id: string;
@@ -10,6 +9,7 @@ type Student = {
   profilePic?: string;
   class?: { name: string };
 };
+
 type Grade = {
   id: string;
   value: number;
@@ -17,18 +17,24 @@ type Grade = {
     name: string;
   };
 };
+
 const MyStudents = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [selected, setSelected] = useState<Student | null>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
   const [details, setDetails] = useState<{
     grades: Grade[];
     attendances: any[];
     warnings: any[];
   } | null>(null);
+
   const [detailTab, setDetailTab] = useState<
     "grades" | "attendance" | "warnings"
   >("grades");
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -37,38 +43,35 @@ const MyStudents = () => {
         !modalRef.current.contains(event.target as Node)
       ) {
         setSelected(null);
+        setDetails(null);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
-  const fetchDetails = async (studentId: string) => {
-    const token = localStorage.getItem("token");
-    const res = await api.get(`users/${studentId}/details`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setDetails(res.data);
-  };
   const fetchStudents = async () => {
     try {
       const token = localStorage.getItem("token");
       const res = await api.get("users/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      console.log(res.data.children);
       setStudents(res.data.children || []);
     } catch (error) {
       toast.error("Грешка при зареждане на учениците.");
-      console.log(error);
+    }
+  };
+
+  const fetchDetails = async (student: Student) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get(`users/${student.id}/details`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSelected(student);
+      setDetails(res.data);
+    } catch (err) {
+      toast.error("Грешка при зареждане на данните за ученика.");
     }
   };
 
@@ -87,7 +90,7 @@ const MyStudents = () => {
         {students.map((student) => (
           <div
             key={student.id}
-            onClick={() => setSelected(student)}
+            onClick={() => fetchDetails(student)}
             className="bg-white p-4 shadow rounded cursor-pointer hover:bg-gray-100"
           >
             <div className="flex items-center gap-4">
@@ -114,65 +117,87 @@ const MyStudents = () => {
       </div>
 
       {/* Модал */}
-      {selected && (
-        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50">
+      {selected && details && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div
             ref={modalRef}
             className="bg-white p-6 rounded shadow max-w-xl w-full relative text-black"
           >
             <button
-              onClick={() => setSelected(null)}
-              className="absolute top-2 right-2 "
+              onClick={() => {
+                setSelected(null);
+                setDetails(null);
+              }}
+              className="absolute top-2 right-2"
             >
               ❌
             </button>
 
-            <h3 className="text-xl font-bold mb-4 ">
+            <h3 className="text-xl font-bold mb-4">
               📄 Данни за {selected.firstName} {selected.lastName}
             </h3>
 
-            <div className="tabs flex gap-4">
+            <div className="flex gap-4 mb-4">
               <button
-                className={detailTab === "grades" ? "active" : ""}
                 onClick={() => setDetailTab("grades")}
+                className={`py-1 px-3 rounded ${
+                  detailTab === "grades" ? "bg-blue-200" : "bg-gray-100"
+                }`}
               >
                 Оценки
               </button>
               <button
-                className={detailTab === "attendance" ? "active" : ""}
                 onClick={() => setDetailTab("attendance")}
+                className={`py-1 px-3 rounded ${
+                  detailTab === "attendance" ? "bg-blue-200" : "bg-gray-100"
+                }`}
               >
                 Присъствия
               </button>
               <button
-                className={detailTab === "warnings" ? "active" : ""}
                 onClick={() => setDetailTab("warnings")}
+                className={`py-1 px-3 rounded ${
+                  detailTab === "warnings" ? "bg-blue-200" : "bg-gray-100"
+                }`}
               >
                 Забележки
               </button>
             </div>
-            {detailTab === "grades" && details ? (
-              <table>
-                ...
-                {details.grades.map((g) => (
-                  <tr key={g.id}>
-                    <td>{g.subject.name}</td>
-                    <td>{g.value}</td>
+
+            {/* Съдържание по таб */}
+            {detailTab === "grades" && (
+              <table className="w-full text-sm border">
+                <thead>
+                  <tr className="bg-gray-200">
+                    <th className="p-2 border">Предмет</th>
+                    <th className="p-2 border">Оценка</th>
                   </tr>
-                ))}
+                </thead>
+                <tbody>
+                  {details.grades.map((g) => (
+                    <tr key={g.id}>
+                      <td className="p-2 border">{g.subject.name}</td>
+                      <td className="p-2 border text-center">{g.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
-            ) : detailTab === "attendance" && details ? (
-              <div>Присъствия: {details.attendances.length}</div>
-            ) : detailTab === "warnings" && details ? (
-              <ul>
-                {details.warnings.map((w) => (
+            )}
+
+            {detailTab === "attendance" && (
+              <div className="text-sm">
+                Общо отсъствия: {details.attendances.length}
+              </div>
+            )}
+
+            {detailTab === "warnings" && (
+              <ul className="list-disc ml-4 text-sm">
+                {details.warnings.map((w: any) => (
                   <li key={w.id}>
                     {w.title}: {w.body}
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p>Зареждане...</p>
             )}
           </div>
         </div>
