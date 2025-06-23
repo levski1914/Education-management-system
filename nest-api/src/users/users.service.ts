@@ -151,4 +151,52 @@ export class UsersService {
       where: { role, schoolId },
     });
   }
+
+  async getSchedule(studentId: string) {
+    const student = await this.prisma.user.findUnique({
+      where: { id: studentId },
+      include: {
+        class: {
+          include: {
+            lessons: {
+              include: {
+                subject: true,
+                teacher: {
+                  select: { firstName: true, lastName: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!student?.class) return [];
+
+    return student.class.lessons;
+  }
+
+  async getSummary(studentId: string) {
+    const [grades, attendances, warnings] = await Promise.all([
+      this.prisma.grade.findMany({ where: { studentId } }),
+      this.prisma.attendance.findMany({ where: { studentId } }),
+      this.prisma.message.findMany({
+        where: {
+          receiverId: studentId,
+          title: { contains: 'Забележка' },
+        },
+      }),
+    ]);
+
+    const avgGrade =
+      grades.length > 0
+        ? grades.reduce((sum, g) => sum + g.value, 0) / grades.length
+        : null;
+
+    return {
+      avgGrade,
+      totalAbsences: attendances.filter((a) => a.status === 'ABSENT').length,
+      totalWarnings: warnings.length,
+    };
+  }
 }

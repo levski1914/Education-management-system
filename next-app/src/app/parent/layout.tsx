@@ -1,11 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LogoutButton from "./components/Logout";
 import MyStudents from "./components/MyStudents";
+import MessagesPage from "./messages/page";
+import { api } from "../utils/api";
+import ParentDashboard from "./components/ParentDashboard";
 
 export default function ParentPanel() {
-  const [tab, setTab] = useState<"dashboard" | "students" | "messages" | "profile">("dashboard");
+  const [unreadCount, setUnreadCount] = useState(0);
+  useEffect(() => {
+    fetchUnread();
+  }, []);
+
+  const fetchUnread = async () => {
+    const token = localStorage.getItem("token");
+    const res = await api.get("/messages/unread-count", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setUnreadCount(res.data.count);
+  };
+  const [tab, setTab] = useState<
+    "dashboard" | "students" | "messages" | "profile"
+  >("dashboard");
 
   return (
     <div className="flex h-screen bg-green-400">
@@ -16,44 +33,57 @@ export default function ParentPanel() {
         <nav className="space-y-4">
           <button
             onClick={() => setTab("dashboard")}
-            className={`block w-full text-left p-2 rounded ${tab === "dashboard" ? "bg-blue-100 font-semibold" : ""}`}
+            className={`block w-full text-left border p-2 rounded cursor-pointer ${
+              tab === "dashboard" ? "bg-blue-100 font-semibold" : ""
+            }`}
           >
             🏠 Начало
           </button>
           <button
             onClick={() => setTab("students")}
-            className={`block w-full text-left p-2 rounded ${tab === "students" ? "bg-blue-100 font-semibold" : ""}`}
+            className={`block w-full text-left border p-2 rounded cursor-pointer ${
+              tab === "students" ? "bg-blue-100 font-semibold" : ""
+            }`}
           >
             👨‍👧 Моите ученици
           </button>
           <button
             onClick={() => setTab("messages")}
-            className={`block w-full text-left p-2 rounded ${tab === "messages" ? "bg-blue-100 font-semibold" : ""}`}
+            className={`block w-full relative border text-left p-2 rounded cursor-pointer ${
+              tab === "messages" ? "bg-blue-100 font-semibold" : ""
+            }`}
           >
             💬 Съобщения
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 border -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setTab("profile")}
-            className={`block w-full text-left p-2 rounded ${tab === "profile" ? "bg-blue-100 font-semibold" : ""}`}
+            className={`block w-full text-left border p-2 rounded cursor-pointer ${
+              tab === "profile" ? "bg-blue-100 font-semibold" : ""
+            }`}
           >
             ⚙️ Профил
           </button>
-          
-       <LogoutButton />
+
+          <LogoutButton />
         </nav>
       </div>
 
       {/* Main content */}
       <div className="flex-1 p-6 overflow-auto">
-        {tab === "dashboard" && <p>Тук ще има обобщена информация.</p>}
-        {tab === "students" && <>
-        
-          <MyStudents />
-        </>}
-        {tab === "messages" && <p>Съобщения и комуникация.</p>}
+        {tab === "dashboard" && <ParentDashboard />}
+        {tab === "students" && (
+          <>
+            <MyStudents />
+          </>
+        )}
+        {tab === "messages" && <MessagesPage />}
         {tab === "profile" && <p>Настройки на профила.</p>}
       </div>
-
     </div>
   );
 }

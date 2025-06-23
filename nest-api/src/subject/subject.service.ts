@@ -17,7 +17,7 @@ export class SubjectService {
   async findById(id: string) {
     return this.prisma.subject.findUnique({ where: { id } });
   }
-  
+
   async delete(id: string) {
     return this.prisma.subject.delete({ where: { id } });
   }

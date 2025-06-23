@@ -30,6 +30,19 @@ export class UsersController {
     private readonly usersService: UsersService,
     private prisma: PrismaService,
   ) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':studentId/schedule')
+  getStudentSchedule(@Param('studentId') studentId: string) {
+    return this.usersService.getSchedule(studentId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':studentId/summary')
+  getStudentSummary(@Param('studentId') studentId: string) {
+    return this.usersService.getSummary(studentId);
+  }
+
   @Put(':parentId/assign-child/:studentId')
   @UseGuards(JwtAuthGuard)
   assignChildToParent(
@@ -45,7 +58,6 @@ export class UsersController {
     return this.usersService.unassignParent(studentId);
   }
 
-
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async getMe(@Request() req) {
@@ -60,20 +72,20 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(":studentId/details")
-  async getStudentDetails(@Param('studentId') studentId:string){
+  @Get(':studentId/details')
+  async getStudentDetails(@Param('studentId') studentId: string) {
     const grades = await this.prisma.grade.findMany({
-      where:{studentId},
-      include:{subject:true},
-    })
-    const attendances=await this.prisma.attendance.findMany({
-      where:{studentId},
-    })
-    const warnings=await this.prisma.message.findMany({
-      where:{receiverId:studentId,toRole:null}
-    })
+      where: { studentId },
+      include: { subject: true },
+    });
+    const attendances = await this.prisma.attendance.findMany({
+      where: { studentId },
+    });
+    const warnings = await this.prisma.message.findMany({
+      where: { receiverId: studentId, toRole: null },
+    });
 
-    return {grades,attendances,warnings}
+    return { grades, attendances, warnings };
   }
 
   @UseGuards(JwtAuthGuard)

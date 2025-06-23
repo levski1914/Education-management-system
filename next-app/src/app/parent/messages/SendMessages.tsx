@@ -42,7 +42,6 @@ const formatDate = (isoString: string) => {
   });
 };
 
-// agni lopez
 export default function Messenger({ fetchUnread }: MessengerProps) {
   const [conversations, setConversations] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -76,8 +75,8 @@ export default function Messenger({ fetchUnread }: MessengerProps) {
 
       if (fetchUnread) {
         fetchUnread();
-      } // нулира само за този разговор
-      await fetchConversations(); // обнови bold-а и състоянието
+      }
+      await fetchConversations();
     }
   };
 
@@ -145,7 +144,7 @@ export default function Messenger({ fetchUnread }: MessengerProps) {
         </div>
 
         {showNewMessageForm && (
-          <div className="space-y-2 mb-4 border p-3 rounded bg-white">
+          <div className="space-y-2 mb-4 border p-3 rounded ">
             <select
               value={selectedNewUserId}
               onChange={(e) => setSelectedNewUserId(e.target.value)}
@@ -153,7 +152,7 @@ export default function Messenger({ fetchUnread }: MessengerProps) {
             >
               <option value="">👤 Избери потребител...</option>
               {allUsers.map((u) => (
-                <option key={u.id} value={u.id}>
+                <option key={u.id} className="bg-yellow-200" value={u.id}>
                   {u.firstName} {u.lastName} ({u.role})
                 </option>
               ))}
@@ -268,7 +267,7 @@ export default function Messenger({ fetchUnread }: MessengerProps) {
                 : msg.sender?.role === "ADMIN"
                 ? "АДМИН"
                 : "Неизвестен";
-
+              console.log(senderName);
               const msgDate = new Date(msg.createdAt).toDateString();
               const showDateHeader = msgDate !== lastRenderedDate;
               lastRenderedDate = msgDate;
@@ -315,7 +314,10 @@ export default function Messenger({ fetchUnread }: MessengerProps) {
         </div>
 
         {selectedUserId && (
-          <div className="flex gap-2 p-4 border-t bg-yellow-100">
+          <div
+            className="flex gap-2 p-4 border-t"
+            style={{ backgroundColor: "#1f106f" }}
+          >
             <input
               type="text"
               value={newMessage}
