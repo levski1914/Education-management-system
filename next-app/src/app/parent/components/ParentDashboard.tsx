@@ -19,12 +19,18 @@ type Summary = {
   totalAbsences: number;
   totalWarnings: number;
 };
+type Student = {
+  id: string;
+  firstName: string;
+  lastName: string;
+};
+
 const ParentDashboard = () => {
   const [schedule, setSchedule] = useState<Lesson[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [studentId, setStudentId] = useState<string | null>(null);
-
+  const [students, setStudents] = useState<Student[]>([]);
   useEffect(() => {
     const fetchChildAndData = async () => {
       try {
@@ -39,7 +45,7 @@ const ParentDashboard = () => {
           setLoading(false);
           return;
         }
-
+        setStudents(res.data.children || null);
         const student = children[0];
         setStudentId(student.id);
 
@@ -77,6 +83,13 @@ const ParentDashboard = () => {
         ) : (
           <>
             {/* 📊 Обобщение */}
+            {students.map((student) => (
+              <div key={student.id} className="br">
+                <h2 className="text-3xl mb-5">
+                  {student.firstName} {student.lastName}
+                </h2>
+              </div>
+            ))}
             <div className="grid grid-cols-1 text-black md:grid-cols-3 gap-4 mb-8">
               <div className="bg-white p-4 rounded shadow">
                 <h3 className="font-bold text-lg mb-2">📚 Среден успех</h3>
