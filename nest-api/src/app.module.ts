@@ -23,6 +23,9 @@ import { ParentsModule } from './parents/parents.module';
 import { TeacherModule } from './teacher/teacher.module';
 import { MessagesModule } from './messages/messages.module';
 import { ConsultationsModule } from './consultations/consultations.module';
+import { ReportService } from './reports/reports.service';
+import { ReportController } from './reports/reports.controller';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -39,12 +42,14 @@ import { ConsultationsModule } from './consultations/consultations.module';
     TeacherModule,
     MessagesModule,
     ConsultationsModule,
+    ReportsModule,
   ],
   controllers: [
     AppController,
     SchoolsController,
     LessonsController,
     StudentsController,
+    ReportController,
   ],
   providers: [
     AppService,
@@ -53,6 +58,7 @@ import { ConsultationsModule } from './consultations/consultations.module';
     SchoolsService,
     LessonsService,
     StudentsService,
+    ReportService,
   ],
 })
 export class AppModule {}

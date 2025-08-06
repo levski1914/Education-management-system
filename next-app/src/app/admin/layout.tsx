@@ -32,6 +32,7 @@ export default function AdminLayout({
     { href: "/admin/classrooms", label: "Управление Класове" },
     { href: "/admin/students", label: "Ученици", warningKey: "students" },
     { href: "/admin/parents", label: "Родители" },
+    { href: "/admin/reports", label: "Отчети" },
   ];
 
   const [warnings, setWarnings] = useState<Record<string, number>>({});
